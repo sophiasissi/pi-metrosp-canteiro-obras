@@ -68,7 +68,6 @@ npx expo start --dev-client
 
 ## 👥 Equipe
 
-- **Branch atual**: `feature/telaLogin`
 - **Repositório**: https://github.com/sophiasissi/pi-metrosp-canteiro-obras
 
 ---
