@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Text,
   View,
-  Alert,
   useWindowDimensions,
   KeyboardAvoidingView,
   ScrollView,
@@ -16,8 +15,8 @@ import { router } from "expo-router";
 import Icon from "react-native-vector-icons/FontAwesome";
 
 export default function LoginScreen() {
-  const { width } = useWindowDimensions(); // largura da tela
-  const isLargeScreen = width > 600; // “media query” — tablets ou telas grandes
+  const { width } = useWindowDimensions(); 
+  const isLargeScreen = width > 600; 
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -25,17 +24,14 @@ export default function LoginScreen() {
   const [emailError, setEmailError] = useState("");
   const [senhaError, setSenhaError] = useState("");
 
-  // Função para validar email
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  // Função para validar campos
   const validateFields = () => {
     let isValid = true;
     
-    // Validar email
     if (!email.trim()) {
       setEmailError("Email é obrigatório");
       isValid = false;
@@ -46,7 +42,6 @@ export default function LoginScreen() {
       setEmailError("");
     }
 
-    // Validar senha
     if (!senha.trim()) {
       setSenhaError("Senha é obrigatória");
       isValid = false;
@@ -61,30 +56,9 @@ export default function LoginScreen() {
   };
 
   const handleLogin = () => {
-    // Validar campos antes de prosseguir
     if (!validateFields()) {
       return;
     }
-    // Comentado temporariamente - autenticação com banco de dados
-    // fetch("http://192.168.0.171:4002/login", {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ email, senha }),
-    // })
-    //   .then((response) => response.json())
-    //   .then((data) => {
-    //     if (data.success) {
-    //       Alert.alert("Sucesso", data.message);
-    //       router.push("/home");
-    //     } else {
-    //       Alert.alert("Erro", data.message);
-    //     }
-    //   })
-    //   .catch(() => {
-    //     Alert.alert("Erro", "Não foi possível realizar o login");
-    //   });
-    
-    // Redirecionamento direto para a tela home (temporário)
     router.push("/(drawer)/home");
   };
 
@@ -101,7 +75,7 @@ export default function LoginScreen() {
         <View
           style={[
             styles.container,
-            isLargeScreen && styles.containerLarge, // aplica estilo diferente
+            isLargeScreen && styles.containerLarge,
           ]}
         >
           <View
@@ -115,7 +89,6 @@ export default function LoginScreen() {
           style={[styles.logo, isLargeScreen && styles.logoLarge]}
         />
 
-        {/* Campo de e-mail */}
         <View style={styles.fieldContainer}>
           <Text style={styles.label}>Email:</Text>
           <TextInput
@@ -131,13 +104,11 @@ export default function LoginScreen() {
             value={email}
             onChangeText={(text) => {
               setEmail(text);
-              if (emailError) setEmailError(""); // Limpa erro ao digitar
+              if (emailError) setEmailError("");
             }}
           />
           {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
         </View>
-
-        {/* Campo de senha */}
         <View style={styles.fieldContainer}>
           <Text style={styles.label}>Senha:</Text>
           <View style={styles.passwordContainer}>
@@ -153,7 +124,7 @@ export default function LoginScreen() {
               value={senha}
               onChangeText={(text) => {
                 setSenha(text);
-                if (senhaError) setSenhaError(""); // Limpa erro ao digitar
+                if (senhaError) setSenhaError("");
               }}
             />
             <TouchableOpacity
@@ -175,8 +146,6 @@ export default function LoginScreen() {
             Esqueceu a senha?
           </Text>
         </View>
-
-          {/* Botão Entrar */}
           <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
             <Text style={styles.loginButtonText}>ENTRAR</Text>
           </TouchableOpacity>
@@ -269,7 +238,14 @@ const styles = StyleSheet.create({
     color: "#000",
     fontSize: 12,
     fontWeight: "bold",
-    marginTop: 5,
+    marginTop: 8,
+    marginLeft: 10,
+  },
+  createAccount: {
+    color: "#0A0486",
+    fontSize: 12,
+    fontWeight: "bold",
+    marginTop: 10,
     marginLeft: 10,
   },
   loginButton: {

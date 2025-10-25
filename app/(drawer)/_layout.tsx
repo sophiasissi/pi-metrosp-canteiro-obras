@@ -24,6 +24,10 @@ export default function DrawerLayout() {
           options={{ title: "Configurações", drawerLabel: "Configurações" }}
         />
         <Drawer.Screen
+          name="signUp"
+          options={{ title: "Adicionar Usuário", drawerLabel: "Adicionar Usuário" }}
+        />
+        <Drawer.Screen
           name="addUser"
           options={{
             title: "Adicionar Usuário",
@@ -31,6 +35,7 @@ export default function DrawerLayout() {
           }}
         />
       </Drawer>
+      
     </GestureHandlerRootView>
   );
 }
