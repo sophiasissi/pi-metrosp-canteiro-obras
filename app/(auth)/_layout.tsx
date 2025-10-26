@@ -1,10 +1,30 @@
 import { Stack } from 'expo-router';
+import { StatusBar } from 'react-native';
+import HeaderWithLogo from '../../components/header-with-logo';
 
 export default function AuthLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="login" />
-      <Stack.Screen name="forgotPassword" />
-    </Stack>
+    <>
+      <StatusBar barStyle="light-content" backgroundColor="#001489" />
+      <Stack>
+        <Stack.Screen
+          name="login"
+          options={{
+            headerShown: false, 
+          }}
+        />
+
+        <Stack.Screen
+          name="forgotPassword"
+          options={{
+            headerShown: true,
+            headerStyle: { backgroundColor: "#001489" },
+            headerTintColor: "#fff",
+            headerTitle: "",
+            headerRight: () => <HeaderWithLogo />,
+          }}
+        />
+      </Stack>
+    </>
   );
 }
