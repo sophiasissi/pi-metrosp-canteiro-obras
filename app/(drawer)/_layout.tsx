@@ -17,7 +17,7 @@ export default function DrawerLayout() {
       >
         <Drawer.Screen
           name="home"
-          options={{ title: "Home", drawerLabel: "Home" }}
+          options={{ title: "Página Inicial", drawerLabel: "Página Inicial" }}
         />
         <Drawer.Screen
           name="settings"
