@@ -9,8 +9,8 @@ export default function HeaderWithLogo({ title }: HeaderWithLogoProps) {
   return (
     <View style={styles.headerContainer}>
       <View style={styles.logoContainer}>
-        <Image 
-          source={require('../assets/images/logo-metro.png')} 
+        <Image
+          source={require('../assets/images/logo-metro.png')}
           style={styles.logo}
           resizeMode="contain"
         />

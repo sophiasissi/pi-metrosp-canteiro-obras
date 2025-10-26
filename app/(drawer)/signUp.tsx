@@ -1,9 +1,9 @@
-import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
+  Animated,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -11,7 +11,7 @@ import {
   TextInput,
   TouchableOpacity,
   useWindowDimensions,
-  View,
+  View
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 
@@ -30,6 +30,9 @@ export default function SignUpScreen() {
   const [emailError, setEmailError] = useState("");
   const [senhaError, setSenhaError] = useState("");
   const [confirmarSenhaError, setConfirmarSenhaError] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const [scaleAnim] = useState(new Animated.Value(0.8));
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -56,7 +59,7 @@ export default function SignUpScreen() {
     } else {
       setSenhaError("");
     }
-    
+
     if (confirmarSenha.trim() !== "") {
       if (text !== confirmarSenha) {
         setConfirmarSenhaError("Senhas não coincidem");
@@ -122,21 +125,110 @@ export default function SignUpScreen() {
     return isValid;
   };
 
+  const showSuccessModalWithAnimation = () => {
+    setShowSuccessModal(true);
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 100,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const clearForm = () => {
+    setNome("");
+    setEmail("");
+    setSenha("");
+    setConfirmarSenha("");
+    setIsAdmin(false);
+    setNomeError("");
+    setEmailError("");
+    setSenhaError("");
+    setConfirmarSenhaError("");
+  };
+
+  const hideSuccessModal = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 0.8,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowSuccessModal(false);
+      clearForm();
+    });
+  };
+
   const handleSignUp = () => {
     if (!validateFields()) {
       return;
     }
 
+    showSuccessModalWithAnimation();
+  };
+
+  const SuccessModal = () => {
     const userType = isAdmin ? "Administrador" : "Usuário";
-    Alert.alert(
-      "Sucesso!",
-      `Cadastro realizado com sucesso como ${userType}! Você já pode fazer login.`,
-      [
-        {
-          text: "OK",
-          onPress: () => router.replace("/(auth)/login"),
-        },
-      ]
+
+    return (
+      <Modal
+        transparent={true}
+        visible={showSuccessModal}
+        animationType="none"
+        onRequestClose={hideSuccessModal}
+      >
+        <Animated.View
+          style={[
+            styles.modalOverlay,
+            {
+              opacity: fadeAnim,
+            },
+          ]}
+        >
+          <Animated.View
+            style={[
+              styles.modalContent,
+              {
+                transform: [{ scale: scaleAnim }],
+              },
+            ]}
+          >
+            <View style={styles.successIconContainer}>
+              <Icon
+                name="check-circle"
+                size={60}
+                color="#4CAF50"
+              />
+            </View>
+
+            <Text style={styles.modalTitle}>Sucesso!</Text>
+
+            <Text style={styles.modalMessage}>
+              Cadastro realizado com sucesso como {userType}!
+            </Text>
+
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={hideSuccessModal}
+            >
+              <Text style={styles.modalButtonText}>OK</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </Animated.View>
+      </Modal>
     );
   };
 
@@ -268,11 +360,11 @@ export default function SignUpScreen() {
             </View>
 
             <View style={styles.checkboxContainer}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[
                   styles.checkbox,
                   isAdmin && { backgroundColor: "#001489" }
-                ]} 
+                ]}
                 onPress={() => setIsAdmin(!isAdmin)}
               >
                 {isAdmin && (
@@ -291,18 +383,10 @@ export default function SignUpScreen() {
             <TouchableOpacity style={styles.signUpButton} onPress={handleSignUp}>
               <Text style={styles.signUpButtonText}>CADASTRAR</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.loginLink}
-              onPress={() => router.push("/(auth)/login")}
-            >
-              <Text style={styles.loginLinkText}>
-                Já tem uma conta? <Text style={styles.loginLinkBold}>Entre aqui</Text>
-              </Text>
-            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
+      <SuccessModal />
     </KeyboardAvoidingView>
   );
 }
@@ -458,5 +542,65 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#333",
     fontWeight: "500",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 30,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    maxWidth: 350,
+    width: "90%",
+  },
+  successIconContainer: {
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#001489",
+    marginBottom: 15,
+    textAlign: "center",
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: "#333",
+    textAlign: "center",
+    marginBottom: 20,
+    lineHeight: 22,
+  },
+  modalButton: {
+    backgroundColor: "#001489",
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    borderRadius: 25,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "bold",
+    textAlign: "center",
   },
 });

@@ -15,8 +15,8 @@ import {
 import Icon from "react-native-vector-icons/FontAwesome";
 
 export default function ForgotPasswordScreen() {
-  const { width } = useWindowDimensions(); // largura da tela
-  const isLargeScreen = width > 600; // "media query" — tablets ou telas grandes
+  const { width } = useWindowDimensions();
+  const isLargeScreen = width > 600;
 
   const [email, setEmail] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
@@ -27,17 +27,17 @@ export default function ForgotPasswordScreen() {
   const [currentPasswordError, setCurrentPasswordError] = useState("");
   const [newPasswordError, setNewPasswordError] = useState("");
 
-  // Função para validar email
+
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  // Função para validar campos
+
   const validateFields = () => {
     let isValid = true;
-    
-    // Validar email
+
+
     if (!email.trim()) {
       setEmailError("Email é obrigatório");
       isValid = false;
@@ -48,7 +48,7 @@ export default function ForgotPasswordScreen() {
       setEmailError("");
     }
 
-    // Validar senha atual
+
     if (!currentPassword.trim()) {
       setCurrentPasswordError("Senha atual é obrigatória");
       isValid = false;
@@ -59,7 +59,7 @@ export default function ForgotPasswordScreen() {
       setCurrentPasswordError("");
     }
 
-    // Validar nova senha
+
     if (!newPassword.trim()) {
       setNewPasswordError("Nova senha é obrigatória");
       isValid = false;
@@ -81,12 +81,12 @@ export default function ForgotPasswordScreen() {
       return;
     }
 
-    // Limpar os campos após validação bem-sucedida
+
     setEmail("");
     setCurrentPassword("");
     setNewPassword("");
 
-    // Navegação direta sem Alert para garantir que funcione
+
     router.replace("/(auth)/login");
   };
 
@@ -103,7 +103,7 @@ export default function ForgotPasswordScreen() {
         <View
           style={[
             styles.container,
-            isLargeScreen && styles.containerLarge, 
+            isLargeScreen && styles.containerLarge,
           ]}
         >
           <View
@@ -121,12 +121,12 @@ export default function ForgotPasswordScreen() {
               Redefinir Senha
             </Text>
 
-            {/* Campo de e-mail */}
+            {}
             <View style={styles.fieldContainer}>
               <Text style={styles.label}>Email:</Text>
               <TextInput
                 style={[
-                  styles.input, 
+                  styles.input,
                   isLargeScreen && styles.inputLarge,
                   emailError ? styles.inputError : null
                 ]}
@@ -137,19 +137,19 @@ export default function ForgotPasswordScreen() {
                 value={email}
                 onChangeText={(text) => {
                   setEmail(text);
-                  if (emailError) setEmailError(""); // Limpa erro ao digitar
+                  if (emailError) setEmailError("");
                 }}
               />
               {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
             </View>
 
-            {/* Campo de senha atual */}
+            {}
             <View style={styles.fieldContainer}>
               <Text style={styles.label}>Senha Atual:</Text>
               <View style={styles.passwordContainer}>
                 <TextInput
                   style={[
-                    styles.inputSenha, 
+                    styles.inputSenha,
                     isLargeScreen && styles.inputLarge,
                     currentPasswordError ? styles.inputError : null
                   ]}
@@ -159,7 +159,7 @@ export default function ForgotPasswordScreen() {
                   value={currentPassword}
                   onChangeText={(text) => {
                     setCurrentPassword(text);
-                    if (currentPasswordError) setCurrentPasswordError(""); // Limpa erro ao digitar
+                    if (currentPasswordError) setCurrentPasswordError("");
                   }}
                 />
                 <TouchableOpacity
@@ -176,13 +176,13 @@ export default function ForgotPasswordScreen() {
               {currentPasswordError ? <Text style={styles.errorText}>{currentPasswordError}</Text> : null}
             </View>
 
-            {/* Campo de nova senha */}
+            {}
             <View style={styles.fieldContainer}>
               <Text style={styles.label}>Nova Senha:</Text>
               <View style={styles.passwordContainer}>
                 <TextInput
                   style={[
-                    styles.inputSenha, 
+                    styles.inputSenha,
                     isLargeScreen && styles.inputLarge,
                     newPasswordError ? styles.inputError : null
                   ]}
@@ -192,7 +192,7 @@ export default function ForgotPasswordScreen() {
                   value={newPassword}
                   onChangeText={(text) => {
                     setNewPassword(text);
-                    if (newPasswordError) setNewPasswordError(""); // Limpa erro ao digitar
+                    if (newPasswordError) setNewPasswordError("");
                   }}
                 />
                 <TouchableOpacity
@@ -209,12 +209,12 @@ export default function ForgotPasswordScreen() {
               {newPasswordError ? <Text style={styles.errorText}>{newPasswordError}</Text> : null}
             </View>
 
-            {/* Botão Redefinir Senha */}
+            {}
             <TouchableOpacity style={styles.resetButton} onPress={handleResetPassword}>
               <Text style={styles.resetButtonText}>REDEFINIR SENHA</Text>
             </TouchableOpacity>
 
-            {/* Botão Voltar */}
+            {}
             <TouchableOpacity
               style={styles.backButton}
               onPress={() => router.push("/(auth)/login")}

@@ -15,8 +15,8 @@ import { router } from "expo-router";
 import Icon from "react-native-vector-icons/FontAwesome";
 
 export default function LoginScreen() {
-  const { width } = useWindowDimensions(); 
-  const isLargeScreen = width > 600; 
+  const { width } = useWindowDimensions();
+  const isLargeScreen = width > 600;
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -31,7 +31,7 @@ export default function LoginScreen() {
 
   const validateFields = () => {
     let isValid = true;
-    
+
     if (!email.trim()) {
       setEmailError("Email é obrigatório");
       isValid = false;
@@ -93,7 +93,7 @@ export default function LoginScreen() {
           <Text style={styles.label}>Email:</Text>
           <TextInput
             style={[
-              styles.input, 
+              styles.input,
               isLargeScreen && styles.inputLarge,
               emailError ? styles.inputError : null
             ]}
@@ -114,7 +114,7 @@ export default function LoginScreen() {
           <View style={styles.passwordContainer}>
             <TextInput
               style={[
-                styles.inputSenha, 
+                styles.inputSenha,
                 isLargeScreen && styles.inputLarge,
                 senhaError ? styles.inputError : null
               ]}
