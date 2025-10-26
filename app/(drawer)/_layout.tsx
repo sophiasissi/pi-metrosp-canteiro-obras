@@ -117,6 +117,35 @@ export default function DrawerLayout() {
             drawerItemStyle: { display: "none" },
           }}
         />
+         <Drawer.Screen
+          name="logout"
+          options={{
+            title: "Sair",
+            drawerLabel: "Sair",
+            drawerItemStyle: { display: "none" },
+          }}
+        />
+        <Drawer.Screen
+          name="addProject"
+          options={{
+            title: "Adicionar Projeto",
+            drawerLabel: "Adicionar Projeto",
+          }}
+        />
+        <Drawer.Screen
+          name="addProgress"
+          options={{
+            title: "Adicionar Progresso",
+            drawerLabel: "Adicionar Progresso",
+          }}
+        />
+        <Drawer.Screen
+          name="projectDetails"
+          options={{
+            title: "Detalhes do Projeto",
+            drawerLabel: "Detalhes do Projeto",
+          }}
+        />
       </Drawer>
     </GestureHandlerRootView>
   );

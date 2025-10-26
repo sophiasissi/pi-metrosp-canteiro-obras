@@ -1,21 +1,21 @@
 import { ThemedView } from "@/components/themed-view";
 import React, { useState } from "react";
 import {
-    Alert,
-    Dimensions,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Dimensions,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function Settings() {
-  // Simulação do tipo de conta. Em produção, obter do contexto/async storage.
+
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   const [user, setUser] = useState({
@@ -24,13 +24,13 @@ export default function Settings() {
     group: "Amarelo",
   });
 
-  // Modals
+
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // Form states for modais
+
   const [emailInput, setEmailInput] = useState("");
   const [emailError, setEmailError] = useState("");
 
@@ -42,10 +42,10 @@ export default function Settings() {
   const [selectedGroup, setSelectedGroup] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
 
-  // Search (admin)
+
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Lista de grupos disponíveis
+
   const availableGroups = [
     "Amarelo",
     "Azul",
@@ -198,7 +198,7 @@ export default function Settings() {
               style={styles.searchInput}
             />
 
-            {/* Exemplo de resultado de busca estático */}
+
             {searchQuery.length > 2 && (
               <View style={styles.resultCard}>
                 <Text style={styles.resultLabel}>Nome: Exemplo User</Text>
@@ -247,7 +247,7 @@ export default function Settings() {
           </View>
         )}
 
-        {/* Email Modal */}
+
         <Modal
           visible={showEmailModal}
           animationType="fade"
@@ -320,7 +320,7 @@ export default function Settings() {
           </TouchableOpacity>
         </Modal>
 
-        {/* Password Modal */}
+
         <Modal
           visible={showPasswordModal}
           animationType="fade"
@@ -416,7 +416,7 @@ export default function Settings() {
           </TouchableOpacity>
         </Modal>
 
-        {/* Group Modal */}
+
         <Modal
           visible={showGroupModal}
           animationType="fade"
@@ -523,7 +523,7 @@ export default function Settings() {
           </TouchableOpacity>
         </Modal>
 
-        {/* Delete Confirmation Modal */}
+
         <Modal
           visible={showDeleteModal}
           animationType="fade"
@@ -741,7 +741,7 @@ const styles = StyleSheet.create({
   },
   outlineButtonText: { color: "#082A85", fontWeight: "700" },
 
-  // Dropdown styles
+
   dropdownLabel: {
     fontSize: 14,
     fontWeight: "600",
@@ -786,7 +786,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  // Delete modal styles
+
   deleteWarning: {
     flexDirection: "row",
     alignItems: "flex-start",

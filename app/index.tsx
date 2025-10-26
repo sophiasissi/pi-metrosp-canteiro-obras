@@ -4,7 +4,7 @@ import * as SplashScreen from "expo-splash-screen";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 
-SplashScreen.preventAutoHideAsync(); // impede o splash nativo de sumir automaticamente
+SplashScreen.preventAutoHideAsync();
 
 export default function CustomSplash() {
   const router = useRouter();
@@ -13,15 +13,15 @@ export default function CustomSplash() {
   useEffect(() => {
     const showSplash = async () => {
       const { width } = Dimensions.get("window");
-      const isLargeScreen = width >= 768; // define "telas grandes" (ex: tablet, desktop)
+      const isLargeScreen = width >= 768;
 
       try {
         const hasOpenedBefore = await AsyncStorage.getItem("hasOpenedBefore");
 
-        // Duração base: 2s na primeira vez, 2s nas próximas
+
         const delay = !hasOpenedBefore ? 2000 : 2000;
 
-        // Se for tela grande ou web, mostra o splash manualmente
+
         if (Platform.OS === "web" || isLargeScreen) {
           setSplashVisible(true);
           await new Promise((resolve) => setTimeout(resolve, delay));
@@ -30,7 +30,7 @@ export default function CustomSplash() {
           return;
         }
 
-        // Dispositivo nativo (Android/iOS)
+
         await new Promise((resolve) => setTimeout(resolve, delay));
         await SplashScreen.hideAsync();
         await AsyncStorage.setItem("hasOpenedBefore", "true");
@@ -43,7 +43,7 @@ export default function CustomSplash() {
     showSplash();
   }, []);
 
-  // Mostra splash manual (para telas grandes e web)
+
   if (isSplashVisible && (Platform.OS === "web" || Dimensions.get("window").width >= 768)) {
     return (
       <View style={styles.container}>
