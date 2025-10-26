@@ -1,0 +1,810 @@
+import { ThemedView } from "@/components/themed-view";
+import React, { useState } from "react";
+import {
+    Alert,
+    Dimensions,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
+
+export default function Settings() {
+  // Simulação do tipo de conta. Em produção, obter do contexto/async storage.
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+
+  const [user, setUser] = useState({
+    name: "Nome Usuário",
+    email: "nomeusuario@gmail.com",
+    group: "Amarelo",
+  });
+
+  // Modals
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showGroupModal, setShowGroupModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // Form states for modais
+  const [emailInput, setEmailInput] = useState("");
+  const [emailError, setEmailError] = useState("");
+
+  const [passwordInput, setPasswordInput] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState("");
+  const [confirmPasswordError, setConfirmPasswordError] = useState("");
+
+  const [selectedGroup, setSelectedGroup] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  // Search (admin)
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Lista de grupos disponíveis
+  const availableGroups = [
+    "Amarelo",
+    "Azul",
+    "Verde",
+    "Vermelho",
+    "Rosa",
+    "Laranja",
+  ];
+  const { width, height } = Dimensions.get("window");
+  const isSmallScreen = width < 400;
+
+  function validateEmail(value: string) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!value) return "Email é obrigatório";
+    if (!re.test(value)) return "Email inválido";
+    return "";
+  }
+
+  function validatePassword(value: string) {
+    if (!value) return "Senha é obrigatória";
+    if (value.length < 6) return "A senha deve ter ao menos 6 caracteres";
+    return "";
+  }
+
+  function openEmailModal() {
+    setEmailInput(user.email);
+    setEmailError("");
+    setShowEmailModal(true);
+  }
+
+  function openPasswordModal() {
+    setPasswordInput("");
+    setConfirmPasswordInput("");
+    setPasswordError("");
+    setConfirmPasswordError("");
+    setShowPasswordModal(true);
+  }
+
+  function handleConfirmEmail() {
+    const err = validateEmail(emailInput.trim());
+    setEmailError(err);
+    if (err) return;
+    setUser({ ...user, email: emailInput.trim() });
+    setShowEmailModal(false);
+    Alert.alert("Sucesso", "Email alterado com sucesso");
+  }
+
+  function handleConfirmPassword() {
+    const err = validatePassword(passwordInput);
+    setPasswordError(err);
+    if (err) return;
+    if (passwordInput !== confirmPasswordInput) {
+      setConfirmPasswordError("As senhas não conferem");
+      return;
+    }
+    setShowPasswordModal(false);
+    Alert.alert("Sucesso", "Senha alterada com sucesso");
+  }
+
+  function openGroupModal() {
+    setSelectedGroup(user.group);
+    setShowDropdown(false);
+    setShowGroupModal(true);
+  }
+
+  function handleConfirmGroup() {
+    if (!selectedGroup) return;
+    setUser({ ...user, group: selectedGroup });
+    setShowGroupModal(false);
+    Alert.alert("Sucesso", `Grupo alterado para ${selectedGroup}`);
+  }
+
+  function openDeleteModal() {
+    setShowDeleteModal(true);
+  }
+
+  function handleConfirmDelete() {
+    setShowDeleteModal(false);
+    Alert.alert(
+      "Conta Deletada",
+      "A conta foi deletada com sucesso (simulação)"
+    );
+  }
+
+  return (
+    <ThemedView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <View style={styles.headerBar}>
+          <TouchableOpacity
+            onPress={() => setIsAdmin(!isAdmin)}
+            style={styles.roleToggle}
+            accessibilityLabel="Trocar tipo de conta"
+          >
+            <Text style={styles.roleToggleText}>
+              {isAdmin ? "Administrador" : "Usuário"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.userName}>{user.name}</Text>
+          <View style={styles.divider} />
+          <Text style={styles.label}>Email: {user.email}</Text>
+          <Text style={styles.label}>Grupo: {user.group}</Text>
+
+          <View style={styles.buttonsRow}>
+            <TouchableOpacity
+              style={styles.blueButton}
+              onPress={openEmailModal}
+            >
+              <Text style={styles.blueButtonText}>Alterar Email</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.blueButton}
+              onPress={openPasswordModal}
+            >
+              <Text style={styles.blueButtonText}>Alterar Senha</Text>
+            </TouchableOpacity>
+          </View>
+
+          {isAdmin && (
+            <View style={styles.buttonsRow}>
+              <TouchableOpacity
+                style={styles.blueButton}
+                onPress={openGroupModal}
+              >
+                <Text style={styles.blueButtonText}>Alterar Grupo</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.redButton}
+                onPress={openDeleteModal}
+              >
+                <Text style={styles.redButtonText}>Deletar Conta</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        {isAdmin && (
+          <View style={styles.searchCard}>
+            <View style={styles.searchHeader}>
+              <Text style={styles.searchTitle}>Pesquisar Usuário</Text>
+            </View>
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Nome ou email"
+              style={styles.searchInput}
+            />
+
+            {/* Exemplo de resultado de busca estático */}
+            {searchQuery.length > 2 && (
+              <View style={styles.resultCard}>
+                <Text style={styles.resultLabel}>Nome: Exemplo User</Text>
+                <Text style={styles.resultLabel}>
+                  Email: exemplouser@gmail.com
+                </Text>
+                <Text style={styles.resultLabel}>Grupo: Rosa</Text>
+
+                <View style={styles.buttonsRow}>
+                  <TouchableOpacity
+                    style={styles.blueButton}
+                    onPress={() =>
+                      Alert.alert("Alterar Email", "Alterar email do usuário")
+                    }
+                  >
+                    <Text style={styles.blueButtonText}>Alterar Email</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.blueButton}
+                    onPress={() =>
+                      Alert.alert("Alterar Senha", "Alterar senha do usuário")
+                    }
+                  >
+                    <Text style={styles.blueButtonText}>Alterar Senha</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.buttonsRow}>
+                  <TouchableOpacity
+                    style={styles.blueButton}
+                    onPress={openGroupModal}
+                  >
+                    <Text style={styles.blueButtonText}>Alterar Grupo</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.redButton}
+                    onPress={openDeleteModal}
+                  >
+                    <Text style={styles.redButtonText}>Deletar Conta</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Email Modal */}
+        <Modal
+          visible={showEmailModal}
+          animationType="fade"
+          transparent={true}
+          statusBarTranslucent={true}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowEmailModal(false)}
+          >
+            <KeyboardAvoidingView
+              style={styles.modalOverlayInner}
+              behavior={Platform.OS === "ios" ? "padding" : undefined}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.modalContainer,
+                  {
+                    width: isSmallScreen ? "95%" : 400,
+                    padding: isSmallScreen ? 24 : 20,
+                    transform: isSmallScreen
+                      ? [{ scale: 1.1 }]
+                      : [{ scale: 1 }],
+                  },
+                ]}
+                activeOpacity={1}
+                onPress={(e) => e.stopPropagation()}
+              >
+                <Text
+                  style={[
+                    styles.modalTitle,
+                    { fontSize: isSmallScreen ? 18 : 16 },
+                  ]}
+                >
+                  Alterar Email
+                </Text>
+                <TextInput
+                  value={emailInput}
+                  onChangeText={(t) => {
+                    setEmailInput(t);
+                    setEmailError(validateEmail(t));
+                  }}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  style={styles.input}
+                  placeholder="Digite o novo email"
+                />
+                {emailError ? (
+                  <Text style={styles.errorText}>{emailError}</Text>
+                ) : null}
+
+                <View style={styles.modalButtonsRow}>
+                  <TouchableOpacity
+                    style={[styles.blueButton, styles.modalButton]}
+                    onPress={handleConfirmEmail}
+                  >
+                    <Text style={styles.blueButtonText}>Confirmar</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.outlineButton, styles.modalButton]}
+                    onPress={() => setShowEmailModal(false)}
+                  >
+                    <Text style={styles.outlineButtonText}>Cancelar</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            </KeyboardAvoidingView>
+          </TouchableOpacity>
+        </Modal>
+
+        {/* Password Modal */}
+        <Modal
+          visible={showPasswordModal}
+          animationType="fade"
+          transparent={true}
+          statusBarTranslucent={true}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowPasswordModal(false)}
+          >
+            <KeyboardAvoidingView
+              style={styles.modalOverlayInner}
+              behavior={Platform.OS === "ios" ? "padding" : undefined}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.modalContainer,
+                  {
+                    width: isSmallScreen ? "95%" : 400,
+                    padding: isSmallScreen ? 24 : 20,
+                    transform: isSmallScreen
+                      ? [{ scale: 1.1 }]
+                      : [{ scale: 1 }],
+                  },
+                ]}
+                activeOpacity={1}
+                onPress={(e) => e.stopPropagation()}
+              >
+                <Text
+                  style={[
+                    styles.modalTitle,
+                    { fontSize: isSmallScreen ? 18 : 16 },
+                  ]}
+                >
+                  Alterar Senha
+                </Text>
+                <TextInput
+                  value={passwordInput}
+                  onChangeText={(t) => {
+                    setPasswordInput(t);
+                    setPasswordError(validatePassword(t));
+                  }}
+                  secureTextEntry
+                  style={[
+                    styles.input,
+                    isSmallScreen && styles.inputSmall
+                  ]}
+                  placeholder="Nova senha"
+                  placeholderTextColor={isSmallScreen ? "#999" : "#999"}
+                />
+                {passwordError ? (
+                  <Text style={styles.errorText}>{passwordError}</Text>
+                ) : null}
+
+                <TextInput
+                  value={confirmPasswordInput}
+                  onChangeText={(t) => {
+                    setConfirmPasswordInput(t);
+                    setConfirmPasswordError(
+                      t === passwordInput ? "" : "As senhas não conferem"
+                    );
+                  }}
+                  secureTextEntry
+                  style={[
+                    styles.input,
+                    isSmallScreen && styles.inputSmall
+                  ]}
+                  placeholder="Confirmar senha"
+                  placeholderTextColor={isSmallScreen ? "#999" : "#999"}
+                />
+                {confirmPasswordError ? (
+                  <Text style={styles.errorText}>{confirmPasswordError}</Text>
+                ) : null}
+
+                <View style={styles.modalButtonsRow}>
+                  <TouchableOpacity
+                    style={[styles.blueButton, styles.modalButton]}
+                    onPress={handleConfirmPassword}
+                  >
+                    <Text style={styles.blueButtonText}>Confirmar</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.outlineButton, styles.modalButton]}
+                    onPress={() => setShowPasswordModal(false)}
+                  >
+                    <Text style={styles.outlineButtonText}>Cancelar</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            </KeyboardAvoidingView>
+          </TouchableOpacity>
+        </Modal>
+
+        {/* Group Modal */}
+        <Modal
+          visible={showGroupModal}
+          animationType="fade"
+          transparent={true}
+          statusBarTranslucent={true}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowGroupModal(false)}
+          >
+            <KeyboardAvoidingView
+              style={styles.modalOverlayInner}
+              behavior={Platform.OS === "ios" ? "padding" : undefined}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.modalContainer,
+                  {
+                    width: isSmallScreen ? "95%" : 400,
+                    padding: isSmallScreen ? 24 : 20,
+                    transform: isSmallScreen
+                      ? [{ scale: 1.1 }]
+                      : [{ scale: 1 }],
+                  },
+                ]}
+                activeOpacity={1}
+                onPress={(e) => e.stopPropagation()}
+              >
+                <Text
+                  style={[
+                    styles.modalTitle,
+                    { fontSize: isSmallScreen ? 18 : 16 },
+                  ]}
+                >
+                  Alterar Grupo
+                </Text>
+
+                <Text style={styles.dropdownLabel}>
+                  Selecione o novo grupo:
+                </Text>
+                <TouchableOpacity
+                  style={styles.dropdownButton}
+                  onPress={() => setShowDropdown(!showDropdown)}
+                >
+                  <Text style={styles.dropdownText}>
+                    {selectedGroup || "Selecionar grupo"}
+                  </Text>
+                  <Text style={styles.dropdownArrow}>
+                    {showDropdown ? "▲" : "▼"}
+                  </Text>
+                </TouchableOpacity>
+
+                {showDropdown && (
+                  <ScrollView
+                    style={styles.dropdownList}
+                    nestedScrollEnabled={true}
+                  >
+                    {availableGroups.map((group) => (
+                      <TouchableOpacity
+                        key={group}
+                        style={[
+                          styles.dropdownItem,
+                          selectedGroup === group &&
+                            styles.dropdownItemSelected,
+                        ]}
+                        onPress={() => {
+                          setSelectedGroup(group);
+                          setShowDropdown(false);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[
+                            styles.dropdownItemText,
+                            selectedGroup === group &&
+                              styles.dropdownItemTextSelected,
+                          ]}
+                        >
+                          {group}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                )}
+
+                <View style={styles.modalButtonsRow}>
+                  <TouchableOpacity
+                    style={[styles.blueButton, styles.modalButton]}
+                    onPress={handleConfirmGroup}
+                  >
+                    <Text style={styles.blueButtonText}>Confirmar</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.outlineButton, styles.modalButton]}
+                    onPress={() => setShowGroupModal(false)}
+                  >
+                    <Text style={styles.outlineButtonText}>Cancelar</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            </KeyboardAvoidingView>
+          </TouchableOpacity>
+        </Modal>
+
+        {/* Delete Confirmation Modal */}
+        <Modal
+          visible={showDeleteModal}
+          animationType="fade"
+          transparent={true}
+          statusBarTranslucent={true}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowDeleteModal(false)}
+          >
+            <KeyboardAvoidingView
+              style={styles.modalOverlayInner}
+              behavior={Platform.OS === "ios" ? "padding" : undefined}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.modalContainer,
+                  {
+                    width: isSmallScreen ? "95%" : 400,
+                    padding: isSmallScreen ? 24 : 20,
+                    transform: isSmallScreen
+                      ? [{ scale: 1.1 }]
+                      : [{ scale: 1 }],
+                  },
+                ]}
+                activeOpacity={1}
+                onPress={(e) => e.stopPropagation()}
+              >
+                <Text
+                  style={[
+                    styles.modalTitle,
+                    { fontSize: isSmallScreen ? 18 : 16 },
+                  ]}
+                >
+                  Confirmar Exclusão
+                </Text>
+
+                <View style={styles.deleteWarning}>
+                  <Text style={styles.deleteWarningText}>⚠️</Text>
+                  <Text style={styles.deleteMessage}>
+                    Tem certeza que deseja deletar esta conta?
+                    {"\n\n"}Esta ação não pode ser desfeita.
+                  </Text>
+                </View>
+
+                <View style={styles.modalButtonsRow}>
+                  <TouchableOpacity
+                    style={[styles.redButton, styles.modalButton]}
+                    onPress={handleConfirmDelete}
+                  >
+                    <Text style={styles.redButtonText}>Deletar</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.outlineButton, styles.modalButton]}
+                    onPress={() => setShowDeleteModal(false)}
+                  >
+                    <Text style={styles.outlineButtonText}>Cancelar</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            </KeyboardAvoidingView>
+          </TouchableOpacity>
+        </Modal>
+      </ScrollView>
+    </ThemedView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#F5F7FA" },
+  scroll: { padding: 16 },
+  headerBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  headerTitle: { fontWeight: "bold", fontSize: 18, color: "#082A85" },
+  roleToggle: { padding: 6, backgroundColor: "#082A85", borderRadius: 8 },
+  roleToggleText: { color: "#fff", fontSize: 12 },
+
+  card: {
+    backgroundColor: "#fff",
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+    elevation: 2,
+    width: "80%",
+    justifyContent: "center",
+    alignSelf: "center",
+  },
+  userName: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#082A85",
+    textAlign: "center",
+  },
+  divider: { height: 1, backgroundColor: "#ccc", marginVertical: 10 },
+  label: { fontSize: 14, fontWeight: "500", marginVertical: 4, color: "#222" },
+
+  buttonsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 12,
+  },
+  blueButton: {
+    flex: 0.48,
+    backgroundColor: "#082A85",
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  blueButtonText: { color: "#fff", fontWeight: "700" },
+
+  redButton: {
+    flex: 0.48,
+    borderWidth: 2,
+    borderColor: "#D50000",
+    paddingVertical: 8,
+    borderRadius: 12,
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  redButtonText: { color: "#D50000", fontWeight: "700" },
+
+  searchCard: {
+    marginTop: "2%",
+    width: "80%",
+    justifyContent: "center",
+    alignSelf: "center",
+    backgroundColor: "#fff",
+    padding: 16,
+    borderRadius: 8,
+    elevation: 2,
+  },
+  searchHeader: { alignItems: "center", marginBottom: 8 },
+  searchTitle: { color: "#082A85", fontWeight: "bold", fontSize: 18 },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    padding: 8,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+
+  resultCard: {
+    backgroundColor: "#f9f9f9",
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  resultLabel: { color: "#222", marginBottom: 4 },
+
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContainer: {
+    width: "90%",
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  modalOverlayInner: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontWeight: "700",
+    marginBottom: 15,
+    color: "#082A85",
+    textAlign: "center",
+  },
+
+  input: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 6,
+  },
+  inputSmall: {
+    padding: 14,
+    fontSize: 16,
+    minHeight: 48,
+  },
+  errorText: { color: "#D50000", marginBottom: 6 },
+  modalButtonsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 15,
+  },
+  modalButton: { flex: 0.48 },
+  outlineButton: {
+    flex: 0.48,
+    borderWidth: 1,
+    borderColor: "#082A85",
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  outlineButtonText: { color: "#082A85", fontWeight: "700" },
+
+  // Dropdown styles
+  dropdownLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#082A85",
+    marginBottom: 8,
+  },
+  dropdownButton: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: "#fff",
+    marginBottom: 8,
+  },
+  dropdownText: { fontSize: 14, color: "#333" },
+  dropdownArrow: { fontSize: 12, color: "#666" },
+  dropdownList: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    backgroundColor: "#fff",
+    marginBottom: 8,
+    maxHeight: 150,
+  },
+  dropdownItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  dropdownItemSelected: {
+    backgroundColor: "#E1EFFE",
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: "#333",
+  },
+  dropdownItemTextSelected: {
+    color: "#082A85",
+    fontWeight: "600",
+  },
+
+  // Delete modal styles
+  deleteWarning: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 16,
+    padding: 12,
+    backgroundColor: "#FFF3E0",
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: "#FF9800",
+  },
+  deleteWarningText: {
+    fontSize: 20,
+    marginRight: 8,
+  },
+  deleteMessage: {
+    flex: 1,
+    fontSize: 14,
+    color: "#333",
+    lineHeight: 20,
+  },
+});
