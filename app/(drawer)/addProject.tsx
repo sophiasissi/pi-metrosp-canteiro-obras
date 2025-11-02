@@ -394,17 +394,13 @@ export default function AddProjectScreen() {
 
     const periodString = startDate && endDate ? `${formatDate(startDate)} até ${formatDate(endDate)}` : "";
 
-
-    const progressOptions = [10, 50, 80, 100];
-    const randomProgress = progressOptions[Math.floor(Math.random() * progressOptions.length)];
-
     const newProject = {
       name: projectName,
       location: location,
       period: periodString,
       group: group,
       image: projectImage || undefined,
-      progress: randomProgress,
+      progress: 0,
     };
 
     addProject(newProject);
@@ -646,7 +642,7 @@ export default function AddProjectScreen() {
                   isLargeScreen && styles.inputLarge,
                   groupError ? styles.inputError : null,
                 ]}
-                placeholder="Digite o grupo"
+                placeholder="Digite o nome do grupo"
                 placeholderTextColor="#B0B0B0"
                 value={group}
                 onChangeText={(text) => {
@@ -669,6 +665,8 @@ export default function AddProjectScreen() {
           </View>
         </View>
       </ScrollView>
+
+
     </KeyboardAvoidingView>
   );
 }
@@ -1041,4 +1039,5 @@ const styles = StyleSheet.create({
   disabledDayText: {
     color: '#d9e1e8',
   },
+
 });
