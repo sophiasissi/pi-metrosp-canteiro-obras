@@ -1,12 +1,12 @@
 import { useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-    useWindowDimensions
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  useWindowDimensions
 } from "react-native";
 import AddProgressModal from "../../components/AddProgressModal";
 import PhotoProgressList from "../../components/PhotoProgressList";
@@ -45,14 +45,31 @@ export default function ProjectDetailsScreen() {
         {}
         <View style={styles.projectInfo}>
           <Text style={styles.infoText}>
-            Período de Tempo: {project.period}
+            <Text style={styles.infoLabel}>Período de Tempo:</Text> {project.period}
           </Text>
           <Text style={styles.infoText}>
-            Localização: {project.location}
+            <Text style={styles.infoLabel}>Localização:</Text> {project.location}
           </Text>
           <Text style={styles.infoText}>
-            Grupo: {project.group}
+            <Text style={styles.infoLabel}>Grupo:</Text> {project.group}
           </Text>
+          
+          {}
+          <View style={styles.progressSection}>
+            <Text style={styles.infoText}>
+              <Text style={styles.infoLabel}>Progresso:</Text> {project.progress}%
+            </Text>
+            <View style={styles.progressBarContainer}>
+              <View style={styles.progressBarBackground}>
+                <View 
+                  style={[
+                    styles.progressBarFill, 
+                    { width: `${project.progress}%` }
+                  ]} 
+                />
+              </View>
+            </View>
+          </View>
         </View>
 
         <View style={styles.divider} />
@@ -119,6 +136,26 @@ const styles = StyleSheet.create({
     color: "#333",
     marginBottom: 8,
     lineHeight: 20,
+  },
+  infoLabel: {
+    fontWeight: "bold",
+  },
+  progressSection: {
+    marginTop: 15,
+  },
+  progressBarContainer: {
+    marginTop: 8,
+  },
+  progressBarBackground: {
+    height: 8,
+    backgroundColor: "#E0E0E0",
+    borderRadius: 4,
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    backgroundColor: "#001489",
+    borderRadius: 4,
   },
   buttonSection: {
     alignItems: "center",

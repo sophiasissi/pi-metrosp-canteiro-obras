@@ -2,7 +2,7 @@ import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import { router } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 import React from "react";
-import { Alert, StatusBar, StyleSheet, View } from "react-native";
+import { Alert, StatusBar, StyleSheet, TouchableOpacity, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import HeaderWithLogo from "../../components/header-with-logo";
@@ -144,6 +144,19 @@ export default function DrawerLayout() {
           options={{
             title: "Detalhes do Projeto",
             drawerLabel: "Detalhes do Projeto",
+            headerLeft: () => (
+              <TouchableOpacity 
+                onPress={() => router.back()}
+                style={{ marginLeft: 16, padding: 8 }}
+              >
+                <Icon 
+                  name="arrow-back" 
+                  size={24} 
+                  color="#fff" 
+                />
+              </TouchableOpacity>
+            ),
+            swipeEnabled: false,
           }}
         />
       </Drawer>

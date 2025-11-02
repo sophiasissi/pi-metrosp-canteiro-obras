@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import {
     Image,
     StyleSheet,
     Text,
+    TouchableOpacity,
     View,
 } from "react-native";
 import { useProjects } from "../contexts/ProjectContext";
+import ImageModal from "./ImageModal"; // ✅ importando o modal reutilizável
 
 interface PhotoProgressListProps {
   projectId: string;
@@ -14,36 +16,27 @@ interface PhotoProgressListProps {
 interface PhotoProgress {
   id: string;
   imageNumber: string;
-  progress: number;
+  progress?: number;
   date: string;
   image?: string;
 }
 
 export default function PhotoProgressList({ projectId }: PhotoProgressListProps) {
   const { projects } = useProjects();
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const project = projects.find(p => p.id === projectId);
-
-
   const photoProgress: PhotoProgress[] = [];
 
-
-  if (project?.image) {
-    photoProgress.push({
-      id: 'initial',
-      imageNumber: 'imagem #1',
-      progress: 0,
-      date: project.createdAt.toLocaleDateString('pt-BR'),
-      image: project.image,
-    });
-  }
-
-
   if (project?.progressHistory) {
-    project.progressHistory.forEach((entry, index) => {
+    const totalImages = project.progressHistory.length;
+    const sortedHistory = [...project.progressHistory].reverse();
+    
+    sortedHistory.forEach((entry, index) => {
       photoProgress.push({
         id: entry.id,
-        imageNumber: `imagem #${photoProgress.length + 1}`,
+        imageNumber: `Imagem ${totalImages - index}`,
         progress: entry.progress,
         date: entry.createdAt.toLocaleDateString('pt-BR'),
         image: entry.image,
@@ -51,28 +44,52 @@ export default function PhotoProgressList({ projectId }: PhotoProgressListProps)
     });
   }
 
+  if (project?.image) {
+    photoProgress.push({
+      id: 'initial',
+      imageNumber: 'Planta Baixa',
+      progress: 0,
+      date: project.createdAt.toLocaleDateString('pt-BR'),
+      image: project.image,
+    });
+  }
 
   if (photoProgress.length === 0) {
     return (
       <View style={styles.container}>
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>Nenhum progresso adicionado ainda</Text>
-          <Text style={styles.emptySubtext}>Adicione fotos do progresso para acompanhar o desenvolvimento</Text>
+          <Text style={styles.emptyText}>Nenhuma imagem adicionada ainda</Text>
+          <Text style={styles.emptySubtext}>
+            Adicione fotos para acompanhar o desenvolvimento do projeto
+          </Text>
         </View>
       </View>
     );
   }
 
   const getProgressColor = (progress: number) => {
-    if (progress <= 25) return '#8E44AD';
-    if (progress <= 50) return '#E67E22';
-    if (progress <= 75) return '#E74C3C';
-    return '#F39C12';
+    if (progress === 0) return '#95A5A6';
+    if (progress <= 20) return '#E74C3C';
+    if (progress <= 40) return '#FF6B35';
+    if (progress <= 60) return '#F39C12';
+    if (progress <= 80) return '#F1C40F';
+    if (progress < 100) return '#2ECC71';
+    return '#27AE60';
+  };
+
+  const handleImagePress = (imageUri?: string) => {
+    if (!imageUri) return;
+    setSelectedImage(imageUri);
+    setModalVisible(true);
   };
 
   const renderProgressItem = (item: PhotoProgress) => (
     <View key={item.id} style={styles.progressItem}>
-      <View style={styles.imageContainer}>
+      <TouchableOpacity
+        style={styles.imageContainer}
+        activeOpacity={0.8}
+        onPress={() => handleImagePress(item.image)}
+      >
         {item.image ? (
           <Image
             source={{ uri: item.image }}
@@ -80,13 +97,19 @@ export default function PhotoProgressList({ projectId }: PhotoProgressListProps)
             resizeMode="cover"
           />
         ) : (
-          <View style={[styles.imagePlaceholder, { backgroundColor: getProgressColor(item.progress) }]}>
+          <View
+            style={[
+              styles.imagePlaceholder,
+              { backgroundColor: getProgressColor(item.progress || 0) },
+            ]}
+          >
             <Text style={styles.imageText}>{item.imageNumber}</Text>
           </View>
         )}
-      </View>
+      </TouchableOpacity>
+
       <View style={styles.progressInfo}>
-        <Text style={styles.progressText}>Progresso: {item.progress}%</Text>
+        <Text style={styles.imageName}>{item.imageNumber}</Text>
         <Text style={styles.dateText}>Data: {item.date}</Text>
       </View>
     </View>
@@ -95,6 +118,13 @@ export default function PhotoProgressList({ projectId }: PhotoProgressListProps)
   return (
     <View style={styles.container}>
       {photoProgress.map(renderProgressItem)}
+
+      {/* ✅ Modal de imagem reutilizável */}
+      <ImageModal
+        visible={modalVisible}
+        imageUri={selectedImage}
+        onClose={() => setModalVisible(false)}
+      />
     </View>
   );
 }
@@ -128,10 +158,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 0,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.22,
     shadowRadius: 2.22,
     elevation: 3,
@@ -166,6 +193,12 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
   },
   progressText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 5,
+  },
+  imageName: {
     fontSize: 14,
     fontWeight: "600",
     color: "#333",

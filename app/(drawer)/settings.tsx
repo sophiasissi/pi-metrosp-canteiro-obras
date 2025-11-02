@@ -1,5 +1,5 @@
 import { ThemedView } from "@/components/themed-view";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Alert,
   Dimensions,
@@ -13,15 +13,17 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useProjects } from "../../contexts/ProjectContext";
 
 export default function Settings() {
+  const { projects } = useProjects();
 
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   const [user, setUser] = useState({
     name: "Nome Usuário",
     email: "nomeusuario@gmail.com",
-    group: "Amarelo",
+    group: "Engenharia Civil",
   });
 
 
@@ -45,15 +47,65 @@ export default function Settings() {
 
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Lista de usuários cadastrados (simulação)
+  const [registeredUsers] = useState([
+    {
+      id: 1,
+      name: "Ana Silva",
+      email: "ana.silva@metrosp.com.br",
+      group: "Engenharia Civil"
+    },
+    {
+      id: 2,
+      name: "João Santos",
+      email: "joao.santos@metrosp.com.br",
+      group: "Engenharia Elétrica"
+    },
+    {
+      id: 3,
+      name: "Maria Oliveira",
+      email: "maria.oliveira@metrosp.com.br",
+      group: "Arquitetura"
+    },
+    {
+      id: 4,
+      name: "Carlos Pereira",
+      email: "carlos.pereira@metrosp.com.br",
+      group: "Topografia"
+    },
+    {
+      id: 5,
+      name: "Fernanda Costa",
+      email: "fernanda.costa@metrosp.com.br",
+      group: "Gestão de Projetos"
+    }
+  ]);
 
-  const availableGroups = [
-    "Amarelo",
-    "Azul",
-    "Verde",
-    "Vermelho",
-    "Rosa",
-    "Laranja",
-  ];
+  // Busca grupos únicos dos projetos cadastrados
+  const availableGroups = useMemo(() => {
+    const projectGroups = projects.map(project => project.group);
+    const uniqueGroups = Array.from(new Set(projectGroups)).filter(Boolean);
+    
+    return uniqueGroups.sort();
+  }, [projects]);
+
+  // Verifica se há grupos disponíveis
+  const hasGroups = availableGroups.length > 0;
+
+  // Função para filtrar usuários por nome ou email
+  const filteredUsers = useMemo(() => {
+    if (searchQuery.length < 3) return [];
+    
+    return registeredUsers.filter(user => 
+      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [searchQuery, registeredUsers]);
+
+  // Verifica se houve alterações nos campos
+  const isEmailChanged = emailInput.trim() !== user.email;
+  const isGroupChanged = selectedGroup !== user.group;
+  const isPasswordValid = passwordInput.length >= 6 && confirmPasswordInput.length >= 6 && passwordInput === confirmPasswordInput && !passwordError && !confirmPasswordError;
   const { width, height } = Dimensions.get("window");
   const isSmallScreen = width < 400;
 
@@ -88,6 +140,13 @@ export default function Settings() {
     const err = validateEmail(emailInput.trim());
     setEmailError(err);
     if (err) return;
+    
+    // Verifica se houve alteração
+    if (emailInput.trim() === user.email) {
+      Alert.alert("Aviso", "Nenhuma alteração foi feita no email");
+      return;
+    }
+    
     setUser({ ...user, email: emailInput.trim() });
     setShowEmailModal(false);
     Alert.alert("Sucesso", "Email alterado com sucesso");
@@ -101,11 +160,26 @@ export default function Settings() {
       setConfirmPasswordError("As senhas não conferem");
       return;
     }
+    
+    // Validação adicional de segurança
+    if (!isPasswordValid) {
+      Alert.alert("Erro", "Preencha todos os campos corretamente");
+      return;
+    }
+    
     setShowPasswordModal(false);
     Alert.alert("Sucesso", "Senha alterada com sucesso");
   }
 
   function openGroupModal() {
+    if (!hasGroups) {
+      Alert.alert(
+        "Nenhum grupo disponível",
+        "Você precisa criar pelo menos um projeto para ter grupos disponíveis.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
     setSelectedGroup(user.group);
     setShowDropdown(false);
     setShowGroupModal(true);
@@ -113,6 +187,13 @@ export default function Settings() {
 
   function handleConfirmGroup() {
     if (!selectedGroup) return;
+    
+    // Verifica se houve alteração
+    if (selectedGroup === user.group) {
+      Alert.alert("Aviso", "Nenhuma alteração foi feita no grupo");
+      return;
+    }
+    
     setUser({ ...user, group: selectedGroup });
     setShowGroupModal(false);
     Alert.alert("Sucesso", `Grupo alterado para ${selectedGroup}`);
@@ -146,10 +227,20 @@ export default function Settings() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.userName}>{user.name}</Text>
-          <View style={styles.divider} />
-          <Text style={styles.label}>Email: {user.email}</Text>
-          <Text style={styles.label}>Grupo: {user.group}</Text>
+          <View style={styles.userInfo}>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Nome: </Text>
+              <Text style={styles.infoValue}>{user.name}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Email: </Text>
+              <Text style={styles.infoValue}>{user.email}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Grupo: </Text>
+              <Text style={styles.infoValue}>{user.group}</Text>
+            </View>
+          </View>
 
           <View style={styles.buttonsRow}>
             <TouchableOpacity
@@ -194,55 +285,94 @@ export default function Settings() {
             <TextInput
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholder="Nome ou email"
+              placeholder="Digite nome ou email (mín. 3 caracteres)"
+              placeholderTextColor="#999"
               style={styles.searchInput}
+              autoCapitalize="none"
+              autoComplete="off"
             />
 
 
             {searchQuery.length > 2 && (
-              <View style={styles.resultCard}>
-                <Text style={styles.resultLabel}>Nome: Exemplo User</Text>
-                <Text style={styles.resultLabel}>
-                  Email: exemplouser@gmail.com
-                </Text>
-                <Text style={styles.resultLabel}>Grupo: Rosa</Text>
+              <>
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.map((foundUser) => (
+                  <View key={foundUser.id} style={styles.resultCard}>
+                    <View style={styles.userInfo}>
+                      <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Nome: </Text>
+                        <Text style={styles.infoValue}>{foundUser.name}</Text>
+                      </View>
+                      <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Email: </Text>
+                        <Text style={styles.infoValue}>{foundUser.email}</Text>
+                      </View>
+                      <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Grupo: </Text>
+                        <Text style={styles.infoValue}>{foundUser.group}</Text>
+                      </View>
+                    </View>
 
-                <View style={styles.buttonsRow}>
-                  <TouchableOpacity
-                    style={styles.blueButton}
-                    onPress={() =>
-                      Alert.alert("Alterar Email", "Alterar email do usuário")
-                    }
-                  >
-                    <Text style={styles.blueButtonText}>Alterar Email</Text>
-                  </TouchableOpacity>
+                    <View style={styles.buttonsRow}>
+                      <TouchableOpacity
+                        style={styles.blueButton}
+                        onPress={() =>
+                          Alert.alert("Alterar Email", `Alterar email de ${foundUser.name}`)
+                        }
+                      >
+                        <Text style={styles.blueButtonText}>Alterar Email</Text>
+                      </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={styles.blueButton}
-                    onPress={() =>
-                      Alert.alert("Alterar Senha", "Alterar senha do usuário")
-                    }
-                  >
-                    <Text style={styles.blueButtonText}>Alterar Senha</Text>
-                  </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.blueButton}
+                        onPress={() =>
+                          Alert.alert("Alterar Senha", `Alterar senha de ${foundUser.name}`)
+                        }
+                      >
+                        <Text style={styles.blueButtonText}>Alterar Senha</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.buttonsRow}>
+                      <TouchableOpacity
+                        style={styles.blueButton}
+                        onPress={() =>
+                          Alert.alert("Alterar Grupo", `Alterar grupo de ${foundUser.name}`)
+                        }
+                      >
+                        <Text style={styles.blueButtonText}>Alterar Grupo</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.redButton}
+                        onPress={() =>
+                          Alert.alert(
+                            "Deletar Conta",
+                            `Confirma a exclusão da conta de ${foundUser.name}?`,
+                            [
+                              { text: "Cancelar", style: "cancel" },
+                              { text: "Deletar", style: "destructive", onPress: () => 
+                                Alert.alert("Sucesso", `Conta de ${foundUser.name} deletada`) }
+                            ]
+                          )
+                        }
+                      >
+                        <Text style={styles.redButtonText}>Deletar Conta</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <View style={styles.noResultsCard}>
+                  <Text style={styles.noResultsText}>
+                    {searchQuery.length >= 2 ? "Nenhum usuário encontrado" : "Nenhum usuário cadastrado"}
+                  </Text>
+                  <Text style={styles.noResultsSubtext}>
+                    Tente buscar por nome ou email diferente
+                  </Text>
                 </View>
-
-                <View style={styles.buttonsRow}>
-                  <TouchableOpacity
-                    style={styles.blueButton}
-                    onPress={openGroupModal}
-                  >
-                    <Text style={styles.blueButtonText}>Alterar Grupo</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.redButton}
-                    onPress={openDeleteModal}
-                  >
-                    <Text style={styles.redButtonText}>Deletar Conta</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+                )}
+              </>
             )}
           </View>
         )}
@@ -302,10 +432,20 @@ export default function Settings() {
 
                 <View style={styles.modalButtonsRow}>
                   <TouchableOpacity
-                    style={[styles.blueButton, styles.modalButton]}
+                    style={[
+                      styles.blueButton, 
+                      styles.modalButton,
+                      (!isEmailChanged || emailError) && styles.disabledButton
+                    ]}
                     onPress={handleConfirmEmail}
+                    disabled={!isEmailChanged || !!emailError}
                   >
-                    <Text style={styles.blueButtonText}>Confirmar</Text>
+                    <Text style={[
+                      styles.blueButtonText,
+                      (!isEmailChanged || emailError) && styles.disabledButtonText
+                    ]}>
+                      Confirmar
+                    </Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -398,10 +538,20 @@ export default function Settings() {
 
                 <View style={styles.modalButtonsRow}>
                   <TouchableOpacity
-                    style={[styles.blueButton, styles.modalButton]}
+                    style={[
+                      styles.blueButton, 
+                      styles.modalButton,
+                      !isPasswordValid && styles.disabledButton
+                    ]}
                     onPress={handleConfirmPassword}
+                    disabled={!isPasswordValid}
                   >
-                    <Text style={styles.blueButtonText}>Confirmar</Text>
+                    <Text style={[
+                      styles.blueButtonText,
+                      !isPasswordValid && styles.disabledButtonText
+                    ]}>
+                      Confirmar
+                    </Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -475,40 +625,61 @@ export default function Settings() {
                     style={styles.dropdownList}
                     nestedScrollEnabled={true}
                   >
-                    {availableGroups.map((group) => (
-                      <TouchableOpacity
-                        key={group}
-                        style={[
-                          styles.dropdownItem,
-                          selectedGroup === group &&
-                            styles.dropdownItemSelected,
-                        ]}
-                        onPress={() => {
-                          setSelectedGroup(group);
-                          setShowDropdown(false);
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <Text
+                    {hasGroups ? (
+                      availableGroups.map((group) => (
+                        <TouchableOpacity
+                          key={group}
                           style={[
-                            styles.dropdownItemText,
+                            styles.dropdownItem,
                             selectedGroup === group &&
-                              styles.dropdownItemTextSelected,
+                              styles.dropdownItemSelected,
                           ]}
+                          onPress={() => {
+                            setSelectedGroup(group);
+                            setShowDropdown(false);
+                          }}
+                          activeOpacity={0.7}
                         >
-                          {group}
+                          <Text
+                            style={[
+                              styles.dropdownItemText,
+                              selectedGroup === group &&
+                                styles.dropdownItemTextSelected,
+                            ]}
+                          >
+                            {group}
+                          </Text>
+                        </TouchableOpacity>
+                      ))
+                    ) : (
+                      <View style={styles.emptyGroupContainer}>
+                        <Text style={styles.emptyGroupText}>
+                          Nenhum grupo cadastrado
                         </Text>
-                      </TouchableOpacity>
-                    ))}
+                        <Text style={styles.emptyGroupSubtext}>
+                          Crie um projeto primeiro para ter grupos disponíveis
+                        </Text>
+                      </View>
+                    )}
                   </ScrollView>
                 )}
 
                 <View style={styles.modalButtonsRow}>
                   <TouchableOpacity
-                    style={[styles.blueButton, styles.modalButton]}
+                    style={[
+                      styles.blueButton, 
+                      styles.modalButton,
+                      (!isGroupChanged || !selectedGroup || !hasGroups) && styles.disabledButton
+                    ]}
                     onPress={handleConfirmGroup}
+                    disabled={!isGroupChanged || !selectedGroup || !hasGroups}
                   >
-                    <Text style={styles.blueButtonText}>Confirmar</Text>
+                    <Text style={[
+                      styles.blueButtonText,
+                      (!isGroupChanged || !selectedGroup || !hasGroups) && styles.disabledButtonText
+                    ]}>
+                      Confirmar
+                    </Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -806,5 +977,71 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#333",
     lineHeight: 20,
+  },
+  emptyGroupContainer: {
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyGroupText: {
+    fontSize: 16,
+    color: "#666",
+    fontWeight: "600",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  emptyGroupSubtext: {
+    fontSize: 14,
+    color: "#999",
+    textAlign: "center",
+    lineHeight: 18,
+  },
+  disabledButton: {
+    backgroundColor: "#CCCCCC",
+    opacity: 0.6,
+  },
+  disabledButtonText: {
+    color: "#999999",
+  },
+  noResultsCard: {
+    backgroundColor: "#f9f9f9",
+    padding: 20,
+    borderRadius: 8,
+    marginTop: 8,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    borderStyle: "dashed",
+  },
+  noResultsText: {
+    fontSize: 16,
+    color: "#666",
+    fontWeight: "600",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  noResultsSubtext: {
+    fontSize: 14,
+    color: "#999",
+    textAlign: "center",
+  },
+  userInfo: {
+    marginBottom: 15,
+  },
+  infoRow: {
+    flexDirection: "row",
+    marginBottom: 8,
+    alignItems: "center",
+  },
+  infoLabel: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#222",
+    minWidth: 50,
+  },
+  infoValue: {
+    fontSize: 14,
+    color: "#333",
+    flex: 1,
   },
 });

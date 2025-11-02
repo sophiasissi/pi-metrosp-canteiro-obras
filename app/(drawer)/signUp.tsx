@@ -1,20 +1,19 @@
 import React, { useState } from "react";
 import {
-  Animated,
-  Image,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  useWindowDimensions,
-  View
+    Animated,
+    Image,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    useWindowDimensions,
+    View
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
-
 export default function SignUpScreen() {
   const { width } = useWindowDimensions();
   const isLargeScreen = width > 600;
@@ -30,6 +29,7 @@ export default function SignUpScreen() {
   const [emailError, setEmailError] = useState("");
   const [senhaError, setSenhaError] = useState("");
   const [confirmarSenhaError, setConfirmarSenhaError] = useState("");
+  const [selectedGroup, setSelectedGroup] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
   const [scaleAnim] = useState(new Animated.Value(0.8));
@@ -147,6 +147,7 @@ export default function SignUpScreen() {
     setEmail("");
     setSenha("");
     setConfirmarSenha("");
+    setSelectedGroup("");
     setIsAdmin(false);
     setNomeError("");
     setEmailError("");
