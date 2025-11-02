@@ -226,12 +226,91 @@ export default function Settings() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.card}>
-          <View style={styles.userInfo}>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Nome: </Text>
-              <Text style={styles.infoValue}>{user.name}</Text>
+        {isAdmin && (
+          <View style={styles.searchCard}>
+            <View style={styles.searchHeader}>
+              <Text style={styles.searchTitle}>Pesquisar Usuário</Text>
             </View>
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Digite nome ou email (mín. 3 caracteres)"
+              placeholderTextColor="#999"
+              style={styles.searchInput}
+              autoCapitalize="none"
+              autoComplete="off"
+            />
+
+            {searchQuery.length > 2 && (
+              <>
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.map((foundUser) => (
+                  <View key={foundUser.id} style={styles.resultCard}>
+                    <Text style={styles.userName}>{foundUser.name}</Text>
+                    <View style={styles.userInfo}>
+                      <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Email: </Text>
+                        <Text style={styles.infoValue}>{foundUser.email}</Text>
+                      </View>
+                      <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Grupo: </Text>
+                        <Text style={styles.infoValue}>{foundUser.group}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.buttonsRow}>
+                      <TouchableOpacity
+                        style={styles.blueButton}
+                        onPress={() => handleSearchUserEmailAction(foundUser)}
+                      >
+                        <Text style={styles.blueButtonText}>Alterar Email</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.blueButton}
+                        onPress={() => handleSearchUserPasswordAction(foundUser)}
+                      >
+                        <Text style={styles.blueButtonText}>Alterar Senha</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.buttonsRow}>
+                      <TouchableOpacity
+                        style={styles.blueButton}
+                        onPress={() => handleSearchUserGroupAction(foundUser)}
+                      >
+                        <Text style={styles.blueButtonText}>Alterar Grupo</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.redButton}
+                        onPress={() => handleSearchUserDeleteAction(foundUser)}
+                      >
+                        <Text style={styles.redButtonText}>Deletar Conta</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  ))
+                ) : (
+                  <View style={styles.noResultsCard}>
+                    <Text style={styles.noResultsText}>
+                      {searchQuery.length >= 2 ? "Nenhum usuário encontrado" : "Nenhum usuário cadastrado"}
+                    </Text>
+                    <Text style={styles.noResultsSubtext}>
+                      Tente buscar por nome ou email diferente
+                    </Text>
+                  </View>
+                )}
+              </>
+            )}
+          </View>
+        )}
+
+        {isAdmin && <View style={styles.divider} />}
+
+        <View style={styles.card}>
+          <Text style={styles.userName}>{user.name}</Text>
+          <View style={styles.userInfo}>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Email: </Text>
               <Text style={styles.infoValue}>{user.email}</Text>
@@ -276,106 +355,6 @@ export default function Settings() {
             </View>
           )}
         </View>
-
-        {isAdmin && (
-          <View style={styles.searchCard}>
-            <View style={styles.searchHeader}>
-              <Text style={styles.searchTitle}>Pesquisar Usuário</Text>
-            </View>
-            <TextInput
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="Digite nome ou email (mín. 3 caracteres)"
-              placeholderTextColor="#999"
-              style={styles.searchInput}
-              autoCapitalize="none"
-              autoComplete="off"
-            />
-
-
-            {searchQuery.length > 2 && (
-              <>
-                {filteredUsers.length > 0 ? (
-                  filteredUsers.map((foundUser) => (
-                  <View key={foundUser.id} style={styles.resultCard}>
-                    <View style={styles.userInfo}>
-                      <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Nome: </Text>
-                        <Text style={styles.infoValue}>{foundUser.name}</Text>
-                      </View>
-                      <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Email: </Text>
-                        <Text style={styles.infoValue}>{foundUser.email}</Text>
-                      </View>
-                      <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Grupo: </Text>
-                        <Text style={styles.infoValue}>{foundUser.group}</Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.buttonsRow}>
-                      <TouchableOpacity
-                        style={styles.blueButton}
-                        onPress={() =>
-                          Alert.alert("Alterar Email", `Alterar email de ${foundUser.name}`)
-                        }
-                      >
-                        <Text style={styles.blueButtonText}>Alterar Email</Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={styles.blueButton}
-                        onPress={() =>
-                          Alert.alert("Alterar Senha", `Alterar senha de ${foundUser.name}`)
-                        }
-                      >
-                        <Text style={styles.blueButtonText}>Alterar Senha</Text>
-                      </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.buttonsRow}>
-                      <TouchableOpacity
-                        style={styles.blueButton}
-                        onPress={() =>
-                          Alert.alert("Alterar Grupo", `Alterar grupo de ${foundUser.name}`)
-                        }
-                      >
-                        <Text style={styles.blueButtonText}>Alterar Grupo</Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={styles.redButton}
-                        onPress={() =>
-                          Alert.alert(
-                            "Deletar Conta",
-                            `Confirma a exclusão da conta de ${foundUser.name}?`,
-                            [
-                              { text: "Cancelar", style: "cancel" },
-                              { text: "Deletar", style: "destructive", onPress: () => 
-                                Alert.alert("Sucesso", `Conta de ${foundUser.name} deletada`) }
-                            ]
-                          )
-                        }
-                      >
-                        <Text style={styles.redButtonText}>Deletar Conta</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ))
-              ) : (
-                <View style={styles.noResultsCard}>
-                  <Text style={styles.noResultsText}>
-                    {searchQuery.length >= 2 ? "Nenhum usuário encontrado" : "Nenhum usuário cadastrado"}
-                  </Text>
-                  <Text style={styles.noResultsSubtext}>
-                    Tente buscar por nome ou email diferente
-                  </Text>
-                </View>
-                )}
-              </>
-            )}
-          </View>
-        )}
 
 
         <Modal
@@ -790,11 +769,18 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 18,
-    fontWeight: "700",
-    color: "#082A85",
-    textAlign: "center",
+    fontWeight: "bold",
+    color: "#000",
+    marginBottom: 8,
+    alignSelf: "flex-start",
   },
-  divider: { height: 1, backgroundColor: "#ccc", marginVertical: 10 },
+  divider: { 
+    height: 1, 
+    backgroundColor: "#ddd", 
+    marginVertical: 16,
+    width: "80%",
+    alignSelf: "center"
+  },
   label: { fontSize: 14, fontWeight: "500", marginVertical: 4, color: "#222" },
 
   buttonsRow: {
