@@ -126,13 +126,13 @@ export default function AddProjectScreen() {
         {}
         <View style={styles.calendarHeader}>
           <TouchableOpacity onPress={handlePrevMonth} style={styles.navButton}>
-            <Icon name="chevron-left" size={20} color="#2196F3" />
+            <Icon name="chevron-left" size={16} color="#FFFFFF" />
           </TouchableOpacity>
           <Text style={styles.monthYear}>
             {monthNames[currentMonth]} {currentYear}
           </Text>
           <TouchableOpacity onPress={handleNextMonth} style={styles.navButton}>
-            <Icon name="chevron-right" size={20} color="#2196F3" />
+            <Icon name="chevron-right" size={16} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
 
@@ -881,9 +881,9 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#001489",
-    marginBottom: 15,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    marginBottom: 0,
     textAlign: "center",
   },
   modalHint: {
@@ -938,25 +938,25 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     borderRadius: 15,
     overflow: "hidden",
-    elevation: 10,
+    elevation: 5,
     shadowColor: "#000000",
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 2,
     },
     shadowOpacity: 0.25,
     shadowRadius: 8,
-    maxHeight: "80%",
+    maxWidth: 400,
+    width: "90%",
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: "#F8F9FA",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5E5",
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    backgroundColor: "#082A85",
+    borderBottomWidth: 0,
   },
   closeButton: {
     padding: 5,
@@ -970,71 +970,87 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 15,
-    paddingHorizontal: 10,
+    paddingVertical: 10,
   },
   navButton: {
     padding: 10,
+    borderRadius: 8,
+    backgroundColor: '#082A85',
+    minWidth: 40,
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   monthYear: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#2d4150',
+    fontWeight: '700',
+    color: '#082A85',
   },
   dayNamesRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginBottom: 10,
+    paddingVertical: 8,
+    backgroundColor: '#F0F4FF',
+    borderRadius: 8,
   },
   dayName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
+    color: '#082A85',
     textAlign: 'center',
     flex: 1,
   },
   daysGrid: {
-    gap: 2,
+    gap: 5,
   },
   weekRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    marginBottom: 5,
   },
   dayCell: {
     flex: 1,
-    aspectRatio: 1,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
   },
   dayButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent',
   },
   selectedDay: {
-    backgroundColor: '#2196F3',
+    backgroundColor: '#082A85',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   todayDay: {
-    backgroundColor: '#E3F2FD',
-    borderWidth: 1,
-    borderColor: '#2196F3',
+    backgroundColor: '#E6F0FF',
+    borderWidth: 2,
+    borderColor: '#082A85',
   },
   disabledDay: {
     backgroundColor: 'transparent',
   },
   dayText: {
     fontSize: 16,
-    color: '#2d4150',
+    color: '#333333',
+    fontWeight: '500',
   },
   selectedDayText: {
     color: '#FFFFFF',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   todayDayText: {
-    color: '#2196F3',
-    fontWeight: '600',
+    color: '#082A85',
+    fontWeight: '700',
   },
   disabledDayText: {
     color: '#d9e1e8',
