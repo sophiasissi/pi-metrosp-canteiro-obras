@@ -1,52 +1,96 @@
 import React, { useState } from "react";
 import {
-    Animated,
-    Image,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    useWindowDimensions,
-    View
+  Animated,
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useWindowDimensions,
+  View
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
+import { validateCPF, formatCPF, cleanCPF } from "../../utils/cpfValidator";
 export default function SignUpScreen() {
   const { width } = useWindowDimensions();
   const isLargeScreen = width > 600;
 
   const [nome, setNome] = useState("");
-  const [email, setEmail] = useState("");
+  const [cpf, setCpf] = useState("");
   const [senha, setSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [grupo, setGrupo] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
   const [nomeError, setNomeError] = useState("");
-  const [emailError, setEmailError] = useState("");
+  const [cpfError, setCpfError] = useState("");
   const [senhaError, setSenhaError] = useState("");
   const [confirmarSenhaError, setConfirmarSenhaError] = useState("");
+  const [grupoError, setGrupoError] = useState("");
   const [selectedGroup, setSelectedGroup] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
   const [scaleAnim] = useState(new Animated.Value(0.8));
 
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+  const validateNome = (nome: string) => {
+    // Permite apenas letras (incluindo acentos) e espaços
+    const nomeRegex = /^[A-Za-zÀ-ÿ\s]+$/;
+    return nomeRegex.test(nome);
   };
 
-  const handleEmailChange = (text: string) => {
-    setEmail(text);
-    if (text.trim() === "") {
-      setEmailError("");
-    } else if (!validateEmail(text)) {
-      setEmailError("Email inválido");
-    } else {
-      setEmailError("");
+  const validateCpfInput = (cpf: string) => {
+    // Para validação durante digitação - permite apenas números
+    const cpfNumbers = cpf.replace(/\D/g, '');
+    return cpfNumbers.length <= 11 && /^\d*$/.test(cpfNumbers);
+  };
+
+  const validateGrupo = (grupo: string) => {
+    // Permite apenas letras minúsculas (sem espaços)
+    const grupoRegex = /^[a-z]*$/;
+    return grupoRegex.test(grupo);
+  };
+
+  const handleNomeChange = (text: string) => {
+    if (validateNome(text) || text === "") {
+      setNome(text);
+      if (nomeError) setNomeError("");
+    }
+  };
+
+  const handleCpfChange = (text: string) => {
+    // Usa o formatador do utilitário
+    const formattedCpf = formatCPF(text);
+    const cleanedCpf = cleanCPF(text);
+    
+    if (cleanedCpf.length <= 11) {
+      setCpf(formattedCpf);
+      
+      // Valida o CPF em tempo real quando tiver 11 dígitos
+      if (cleanedCpf.length === 11) {
+        const cpfValidation = validateCPF(formattedCpf);
+        if (!cpfValidation.isValid) {
+          setCpfError(cpfValidation.message || "CPF inválido");
+        } else {
+          setCpfError("");
+        }
+      } else {
+        // Limpa erro se ainda está digitando
+        if (cpfError) setCpfError("");
+      }
+    }
+  };
+
+  const handleGrupoChange = (text: string) => {
+    // Converte automaticamente para minúsculas
+    const lowercaseText = text.toLowerCase();
+    if (validateGrupo(lowercaseText) || lowercaseText === "") {
+      setGrupo(lowercaseText);
+      if (grupoError) setGrupoError("");
     }
   };
 
@@ -89,18 +133,24 @@ export default function SignUpScreen() {
     } else if (nome.trim().length < 2) {
       setNomeError("Nome deve ter pelo menos 2 caracteres");
       isValid = false;
+    } else if (!validateNome(nome)) {
+      setNomeError("Nome deve conter apenas letras");
+      isValid = false;
     } else {
       setNomeError("");
     }
 
-    if (!email.trim()) {
-      setEmailError("Email é obrigatório");
-      isValid = false;
-    } else if (!validateEmail(email)) {
-      setEmailError("Email inválido");
+    if (!cpf.trim()) {
+      setCpfError("CPF é obrigatório");
       isValid = false;
     } else {
-      setEmailError("");
+      const cpfValidation = validateCPF(cpf);
+      if (!cpfValidation.isValid) {
+        setCpfError(cpfValidation.message || "CPF inválido");
+        isValid = false;
+      } else {
+        setCpfError("");
+      }
     }
 
     if (!senha.trim()) {
@@ -122,6 +172,17 @@ export default function SignUpScreen() {
     } else {
       setConfirmarSenhaError("");
     }
+
+    if (!grupo.trim()) {
+      setGrupoError("Grupo é obrigatório");
+      isValid = false;
+    } else if (!validateGrupo(grupo)) {
+      setGrupoError("Grupo deve conter apenas letras minúsculas (sem espaços)");
+      isValid = false;
+    } else {
+      setGrupoError("");
+    }
+
     return isValid;
   };
 
@@ -144,15 +205,17 @@ export default function SignUpScreen() {
 
   const clearForm = () => {
     setNome("");
-    setEmail("");
+    setCpf("");
     setSenha("");
     setConfirmarSenha("");
+    setGrupo("");
     setSelectedGroup("");
     setIsAdmin(false);
     setNomeError("");
-    setEmailError("");
+    setCpfError("");
     setSenhaError("");
     setConfirmarSenhaError("");
+    setGrupoError("");
   };
 
   const hideSuccessModal = () => {
@@ -274,30 +337,27 @@ export default function SignUpScreen() {
                 placeholder="Digite seu nome completo"
                 placeholderTextColor="#B0B0B0"
                 value={nome}
-                onChangeText={(text) => {
-                  setNome(text);
-                  if (nomeError) setNomeError("");
-                }}
+                onChangeText={handleNomeChange}
               />
               {nomeError ? <Text style={styles.errorText}>{nomeError}</Text> : null}
             </View>
 
             <View style={styles.fieldContainer}>
-              <Text style={styles.label}>Email:</Text>
+              <Text style={styles.label}>CPF:</Text>
               <TextInput
                 style={[
                   styles.input,
                   isLargeScreen && styles.inputLarge,
-                  emailError ? styles.inputError : null,
+                  cpfError ? styles.inputError : null,
                 ]}
-                placeholder="Digite seu email"
+                placeholder="Digite seu CPF"
                 placeholderTextColor="#B0B0B0"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={email}
-                onChangeText={handleEmailChange}
+                keyboardType="numeric"
+                value={cpf}
+                onChangeText={handleCpfChange}
+                maxLength={14} // XXX.XXX.XXX-XX
               />
-              {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+              {cpfError ? <Text style={styles.errorText}>{cpfError}</Text> : null}
             </View>
 
             <View style={styles.fieldContainer}>
@@ -309,7 +369,7 @@ export default function SignUpScreen() {
                     isLargeScreen && styles.inputLarge,
                     senhaError ? styles.inputError : null,
                   ]}
-                  placeholder="Digite sua senha (mínimo 6 caracteres)"
+                  placeholder="Digite sua senha"
                   placeholderTextColor="#B0B0B0"
                   secureTextEntry={!mostrarSenha}
                   value={senha}
@@ -358,6 +418,23 @@ export default function SignUpScreen() {
               {confirmarSenhaError ? (
                 <Text style={styles.errorText}>{confirmarSenhaError}</Text>
               ) : null}
+            </View>
+
+            <View style={styles.fieldContainer}>
+              <Text style={styles.label}>Grupo:</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  isLargeScreen && styles.inputLarge,
+                  grupoError ? styles.inputError : null,
+                ]}
+                placeholder="Digite o nome do grupo"
+                placeholderTextColor="#B0B0B0"
+                autoCapitalize="none"
+                value={grupo}
+                onChangeText={handleGrupoChange}
+              />
+              {grupoError ? <Text style={styles.errorText}>{grupoError}</Text> : null}
             </View>
 
             <View style={styles.checkboxContainer}>

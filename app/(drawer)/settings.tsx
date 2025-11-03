@@ -1,4 +1,5 @@
 import { ThemedView } from "@/components/themed-view";
+import { router } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
   Alert,
@@ -23,7 +24,7 @@ export default function Settings() {
   const [user, setUser] = useState({
     name: "Nome Usuário",
     email: "nomeusuario@gmail.com",
-    group: "Engenharia Civil",
+    group: "Amarelo",
   });
 
 
@@ -31,6 +32,7 @@ export default function Settings() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showNoGroupsModal, setShowNoGroupsModal] = useState(false);
 
 
   const [emailInput, setEmailInput] = useState("");
@@ -81,7 +83,7 @@ export default function Settings() {
     }
   ]);
 
-  // Busca grupos únicos dos projetos cadastrados
+  // Busca grupos únicos apenas dos projetos cadastrados
   const availableGroups = useMemo(() => {
     const projectGroups = projects.map(project => project.group);
     const uniqueGroups = Array.from(new Set(projectGroups)).filter(Boolean);
@@ -173,11 +175,7 @@ export default function Settings() {
 
   function openGroupModal() {
     if (!hasGroups) {
-      Alert.alert(
-        "Nenhum grupo disponível",
-        "Você precisa criar pelo menos um projeto para ter grupos disponíveis.",
-        [{ text: "OK" }]
-      );
+      setShowNoGroupsModal(true);
       return;
     }
     setSelectedGroup(user.group);
@@ -208,6 +206,87 @@ export default function Settings() {
     Alert.alert(
       "Conta Deletada",
       "A conta foi deletada com sucesso (simulação)"
+    );
+  }
+
+  // Funções para ações de administrador em outros usuários
+  function handleSearchUserEmailAction(foundUser: any) {
+    Alert.alert(
+      "Alterar Email",
+      `Deseja alterar o email de ${foundUser.name}?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        { 
+          text: "Alterar", 
+          onPress: () => {
+            Alert.alert("Sucesso", `Email de ${foundUser.name} alterado com sucesso (simulação)`);
+          }
+        }
+      ]
+    );
+  }
+
+  function handleSearchUserPasswordAction(foundUser: any) {
+    Alert.alert(
+      "Alterar Senha",
+      `Deseja alterar a senha de ${foundUser.name}?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        { 
+          text: "Alterar", 
+          onPress: () => {
+            Alert.alert("Sucesso", `Senha de ${foundUser.name} alterada com sucesso (simulação)`);
+          }
+        }
+      ]
+    );
+  }
+
+  function handleSearchUserGroupAction(foundUser: any) {
+    if (!hasGroups) {
+      setShowNoGroupsModal(true);
+      return;
+    }
+
+    Alert.alert(
+      "Alterar Grupo",
+      `Grupo atual de ${foundUser.name}: ${foundUser.group}\n\nEscolha o novo grupo:`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        ...availableGroups.slice(0, 3).map(group => ({
+          text: group,
+          onPress: () => {
+            if (group === foundUser.group) {
+              Alert.alert("Aviso", "O usuário já pertence a este grupo");
+            } else {
+              Alert.alert("Sucesso", `Grupo de ${foundUser.name} alterado para ${group} (simulação)`);
+            }
+          }
+        })),
+        ...(availableGroups.length > 3 ? [{ 
+          text: "Ver mais...", 
+          onPress: () => {
+            Alert.alert("Grupos disponíveis", availableGroups.join("\n"));
+          }
+        }] : [])
+      ]
+    );
+  }
+
+  function handleSearchUserDeleteAction(foundUser: any) {
+    Alert.alert(
+      "Deletar Usuário",
+      `Tem certeza que deseja deletar a conta de ${foundUser.name}?\n\nEsta ação não pode ser desfeita.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        { 
+          text: "Deletar", 
+          style: "destructive",
+          onPress: () => {
+            Alert.alert("Sucesso", `Conta de ${foundUser.name} deletada com sucesso (simulação)`);
+          }
+        }
+      ]
     );
   }
 
@@ -739,6 +818,76 @@ export default function Settings() {
             </KeyboardAvoidingView>
           </TouchableOpacity>
         </Modal>
+
+        {/* Modal de Nenhum Grupo Disponível */}
+        <Modal
+          visible={showNoGroupsModal}
+          animationType="fade"
+          transparent={true}
+          statusBarTranslucent={true}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowNoGroupsModal(false)}
+          >
+            <KeyboardAvoidingView
+              style={styles.modalOverlayInner}
+              behavior={Platform.OS === "ios" ? "padding" : undefined}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.modalContainer,
+                  {
+                    width: isSmallScreen ? "95%" : 400,
+                    padding: isSmallScreen ? 24 : 20,
+                  },
+                ]}
+                activeOpacity={1}
+                onPress={(e) => e.stopPropagation()}
+              >
+                <Text style={[styles.modalTitle, { fontSize: isSmallScreen ? 18 : 16 }]}>
+                  📂 Nenhum Grupo Disponível
+                </Text>
+                
+                <Text style={styles.noGroupsModalText}>
+                  {projects.length === 0 
+                    ? "Não há projetos cadastrados no sistema ainda." 
+                    : "Os projetos cadastrados não possuem grupos definidos."
+                  }
+                </Text>
+                
+                <Text style={styles.noGroupsModalSubtext}>
+                  {projects.length === 0 
+                    ? "Para ter grupos disponíveis, você precisa primeiro adicionar algum projeto. Cada projeto pode ter um grupo específico." 
+                    : "Verifique os projetos existentes e certifique-se de que eles possuem grupos definidos."
+                  }
+                </Text>
+
+                <View style={styles.modalButtonsRow}>
+                  <TouchableOpacity
+                    style={[styles.outlineButton, styles.modalButton]}
+                    onPress={() => setShowNoGroupsModal(false)}
+                  >
+                    <Text style={styles.outlineButtonText}>Fechar</Text>
+                  </TouchableOpacity>
+                  
+                  {projects.length === 0 && (
+                    <TouchableOpacity
+                      style={[styles.blueButton, styles.modalButton]}
+                      onPress={() => {
+                        setShowNoGroupsModal(false);
+                        router.push("/(drawer)/addProject");
+                      }}
+                    >
+                      <Text style={styles.blueButtonText}>Adicionar Projeto</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </TouchableOpacity>
+            </KeyboardAvoidingView>
+          </TouchableOpacity>
+        </Modal>
       </ScrollView>
     </ThemedView>
   );
@@ -1029,5 +1178,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#333",
     flex: 1,
+  },
+  noGroupsModalText: {
+    fontSize: 16,
+    color: "#333",
+    textAlign: "center",
+    marginBottom: 15,
+    fontWeight: "600",
+  },
+  noGroupsModalSubtext: {
+    fontSize: 14,
+    color: "#666",
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 25,
   },
 });
