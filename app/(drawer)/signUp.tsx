@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
   Animated,
   Image,
@@ -14,11 +15,18 @@ import {
   View
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
-import { validateCPF, formatCPF, cleanCPF } from "../../utils/cpfValidator";
+import { useUsers } from "../../contexts/UsersContext";
+import { cleanCPF, formatCPF, validateCPF } from "../../utils/cpfValidator";
+
 export default function SignUpScreen() {
   const { width } = useWindowDimensions();
   const isLargeScreen = width > 600;
+  const { addUser, updateUser } = useUsers();
+  const params = useLocalSearchParams();
 
+  // Verifica se está em modo de edição
+  const isEditMode = params.editMode === "true";
+  
   const [nome, setNome] = useState("");
   const [cpf, setCpf] = useState("");
   const [senha, setSenha] = useState("");
@@ -36,6 +44,16 @@ export default function SignUpScreen() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
   const [scaleAnim] = useState(new Animated.Value(0.8));
+
+  // Preenche os campos quando estiver em modo de edição
+  useEffect(() => {
+    if (isEditMode && params.userName) {
+      setNome(params.userName as string);
+      setCpf(params.userCpf as string);
+      setGrupo(params.userGroup as string);
+      setIsAdmin(params.userIsAdmin === "true");
+    }
+  }, [isEditMode, params]);
 
   const validateNome = (nome: string) => {
     // Permite apenas letras (incluindo acentos) e espaços
@@ -232,7 +250,13 @@ export default function SignUpScreen() {
       }),
     ]).start(() => {
       setShowSuccessModal(false);
-      clearForm();
+      if (isEditMode) {
+        // Volta para a tela anterior quando estiver editando
+        router.back();
+      } else {
+        // Limpa o formulário apenas quando estiver cadastrando
+        clearForm();
+      }
     });
   };
 
@@ -241,6 +265,22 @@ export default function SignUpScreen() {
       return;
     }
 
+    const userData = {
+      name: nome.trim(),
+      cpf: cpf, // CPF já formatado
+      group: grupo.trim(),
+      isAdmin: isAdmin,
+    };
+
+    if (isEditMode) {
+      // Atualiza usuário existente
+      const userId = parseInt(params.userId as string);
+      updateUser(userId, userData);
+    } else {
+      // Cria novo usuário
+      addUser(userData);
+    }
+    
     showSuccessModalWithAnimation();
   };
 
@@ -281,7 +321,10 @@ export default function SignUpScreen() {
             <Text style={styles.modalTitle}>Sucesso!</Text>
 
             <Text style={styles.modalMessage}>
-              Cadastro realizado com sucesso como {userType}!
+              {isEditMode 
+                ? `Dados atualizados com sucesso como ${userType}!`
+                : `Cadastro realizado com sucesso como ${userType}!`
+              }
             </Text>
 
             <TouchableOpacity
@@ -324,7 +367,7 @@ export default function SignUpScreen() {
               style={[styles.logo, isLargeScreen && styles.logoLarge]}
             />
 
-            <Text style={styles.title}>Criar Conta</Text>
+            <Text style={styles.title}>{isEditMode ? "Editar Dados" : "Criar Conta"}</Text>
 
             <View style={styles.fieldContainer}>
               <Text style={styles.label}>Nome Completo:</Text>
@@ -349,13 +392,15 @@ export default function SignUpScreen() {
                   styles.input,
                   isLargeScreen && styles.inputLarge,
                   cpfError ? styles.inputError : null,
+                  isEditMode && styles.inputDisabled,
                 ]}
                 placeholder="Digite seu CPF"
                 placeholderTextColor="#B0B0B0"
                 keyboardType="numeric"
                 value={cpf}
-                onChangeText={handleCpfChange}
+                onChangeText={isEditMode ? undefined : handleCpfChange}
                 maxLength={14} // XXX.XXX.XXX-XX
+                editable={!isEditMode}
               />
               {cpfError ? <Text style={styles.errorText}>{cpfError}</Text> : null}
             </View>
@@ -459,7 +504,7 @@ export default function SignUpScreen() {
             </View>
 
             <TouchableOpacity style={styles.signUpButton} onPress={handleSignUp}>
-              <Text style={styles.signUpButtonText}>CADASTRAR</Text>
+              <Text style={styles.signUpButtonText}>{isEditMode ? "ATUALIZAR" : "CADASTRAR"}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -680,5 +725,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     textAlign: "center",
+  },
+  inputDisabled: {
+    backgroundColor: "#f5f5f5",
+    color: "#999",
   },
 });

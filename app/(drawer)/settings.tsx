@@ -15,187 +15,38 @@ import {
   View,
 } from "react-native";
 import { useProjects } from "../../contexts/ProjectContext";
+import { useUsers } from "../../contexts/UsersContext";
 
 export default function Settings() {
   const { projects } = useProjects();
-
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const { users, getAvailableGroups, hasUsers } = useUsers();
 
   const [user, setUser] = useState({
     name: "Nome Usuário",
-    email: "nomeusuario@gmail.com",
     group: "Amarelo",
+    cpf: "123.456.789-00", // CPF do usuário atual
+    isAdmin: true, // O usuário atual é admin para poder acessar esta funcionalidade
   });
 
 
-  const [showEmailModal, setShowEmailModal] = useState(false);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showGroupModal, setShowGroupModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showNoGroupsModal, setShowNoGroupsModal] = useState(false);
-
-
-  const [emailInput, setEmailInput] = useState("");
-  const [emailError, setEmailError] = useState("");
-
-  const [passwordInput, setPasswordInput] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-  const [confirmPasswordInput, setConfirmPasswordInput] = useState("");
-  const [confirmPasswordError, setConfirmPasswordError] = useState("");
-
-  const [selectedGroup, setSelectedGroup] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
 
 
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Lista de usuários cadastrados (simulação)
-  const [registeredUsers] = useState([
-    {
-      id: 1,
-      name: "Ana Silva",
-      email: "ana.silva@metrosp.com.br",
-      group: "Engenharia Civil"
-    },
-    {
-      id: 2,
-      name: "João Santos",
-      email: "joao.santos@metrosp.com.br",
-      group: "Engenharia Elétrica"
-    },
-    {
-      id: 3,
-      name: "Maria Oliveira",
-      email: "maria.oliveira@metrosp.com.br",
-      group: "Arquitetura"
-    },
-    {
-      id: 4,
-      name: "Carlos Pereira",
-      email: "carlos.pereira@metrosp.com.br",
-      group: "Topografia"
-    },
-    {
-      id: 5,
-      name: "Fernanda Costa",
-      email: "fernanda.costa@metrosp.com.br",
-      group: "Gestão de Projetos"
-    }
-  ]);
 
-  // Busca grupos únicos apenas dos projetos cadastrados
-  const availableGroups = useMemo(() => {
-    const projectGroups = projects.map(project => project.group);
-    const uniqueGroups = Array.from(new Set(projectGroups)).filter(Boolean);
-    
-    return uniqueGroups.sort();
-  }, [projects]);
 
-  // Verifica se há grupos disponíveis
-  const hasGroups = availableGroups.length > 0;
-
-  // Função para filtrar usuários por nome ou email
+  // Função para filtrar usuários por nome
   const filteredUsers = useMemo(() => {
     if (searchQuery.length < 3) return [];
     
-    return registeredUsers.filter(user => 
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase())
+    return users.filter(user => 
+      user.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [searchQuery, registeredUsers]);
+  }, [searchQuery, users]);
 
-  // Verifica se houve alterações nos campos
-  const isEmailChanged = emailInput.trim() !== user.email;
-  const isGroupChanged = selectedGroup !== user.group;
-  const isPasswordValid = passwordInput.length >= 6 && confirmPasswordInput.length >= 6 && passwordInput === confirmPasswordInput && !passwordError && !confirmPasswordError;
   const { width, height } = Dimensions.get("window");
   const isSmallScreen = width < 400;
-
-  function validateEmail(value: string) {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!value) return "Email é obrigatório";
-    if (!re.test(value)) return "Email inválido";
-    return "";
-  }
-
-  function validatePassword(value: string) {
-    if (!value) return "Senha é obrigatória";
-    if (value.length < 6) return "A senha deve ter ao menos 6 caracteres";
-    return "";
-  }
-
-  function openEmailModal() {
-    setEmailInput(user.email);
-    setEmailError("");
-    setShowEmailModal(true);
-  }
-
-  function openPasswordModal() {
-    setPasswordInput("");
-    setConfirmPasswordInput("");
-    setPasswordError("");
-    setConfirmPasswordError("");
-    setShowPasswordModal(true);
-  }
-
-  function handleConfirmEmail() {
-    const err = validateEmail(emailInput.trim());
-    setEmailError(err);
-    if (err) return;
-    
-    // Verifica se houve alteração
-    if (emailInput.trim() === user.email) {
-      Alert.alert("Aviso", "Nenhuma alteração foi feita no email");
-      return;
-    }
-    
-    setUser({ ...user, email: emailInput.trim() });
-    setShowEmailModal(false);
-    Alert.alert("Sucesso", "Email alterado com sucesso");
-  }
-
-  function handleConfirmPassword() {
-    const err = validatePassword(passwordInput);
-    setPasswordError(err);
-    if (err) return;
-    if (passwordInput !== confirmPasswordInput) {
-      setConfirmPasswordError("As senhas não conferem");
-      return;
-    }
-    
-    // Validação adicional de segurança
-    if (!isPasswordValid) {
-      Alert.alert("Erro", "Preencha todos os campos corretamente");
-      return;
-    }
-    
-    setShowPasswordModal(false);
-    Alert.alert("Sucesso", "Senha alterada com sucesso");
-  }
-
-  function openGroupModal() {
-    if (!hasGroups) {
-      setShowNoGroupsModal(true);
-      return;
-    }
-    setSelectedGroup(user.group);
-    setShowDropdown(false);
-    setShowGroupModal(true);
-  }
-
-  function handleConfirmGroup() {
-    if (!selectedGroup) return;
-    
-    // Verifica se houve alteração
-    if (selectedGroup === user.group) {
-      Alert.alert("Aviso", "Nenhuma alteração foi feita no grupo");
-      return;
-    }
-    
-    setUser({ ...user, group: selectedGroup });
-    setShowGroupModal(false);
-    Alert.alert("Sucesso", `Grupo alterado para ${selectedGroup}`);
-  }
 
   function openDeleteModal() {
     setShowDeleteModal(true);
@@ -205,72 +56,24 @@ export default function Settings() {
     setShowDeleteModal(false);
     Alert.alert(
       "Conta Deletada",
-      "A conta foi deletada com sucesso (simulação)"
+      "A conta foi deletada com sucesso"
     );
   }
 
-  // Funções para ações de administrador em outros usuários
-  function handleSearchUserEmailAction(foundUser: any) {
-    Alert.alert(
-      "Alterar Email",
-      `Deseja alterar o email de ${foundUser.name}?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        { 
-          text: "Alterar", 
-          onPress: () => {
-            Alert.alert("Sucesso", `Email de ${foundUser.name} alterado com sucesso (simulação)`);
-          }
-        }
-      ]
-    );
-  }
-
-  function handleSearchUserPasswordAction(foundUser: any) {
-    Alert.alert(
-      "Alterar Senha",
-      `Deseja alterar a senha de ${foundUser.name}?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        { 
-          text: "Alterar", 
-          onPress: () => {
-            Alert.alert("Sucesso", `Senha de ${foundUser.name} alterada com sucesso (simulação)`);
-          }
-        }
-      ]
-    );
-  }
-
-  function handleSearchUserGroupAction(foundUser: any) {
-    if (!hasGroups) {
-      setShowNoGroupsModal(true);
-      return;
-    }
-
-    Alert.alert(
-      "Alterar Grupo",
-      `Grupo atual de ${foundUser.name}: ${foundUser.group}\n\nEscolha o novo grupo:`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        ...availableGroups.slice(0, 3).map(group => ({
-          text: group,
-          onPress: () => {
-            if (group === foundUser.group) {
-              Alert.alert("Aviso", "O usuário já pertence a este grupo");
-            } else {
-              Alert.alert("Sucesso", `Grupo de ${foundUser.name} alterado para ${group} (simulação)`);
-            }
-          }
-        })),
-        ...(availableGroups.length > 3 ? [{ 
-          text: "Ver mais...", 
-          onPress: () => {
-            Alert.alert("Grupos disponíveis", availableGroups.join("\n"));
-          }
-        }] : [])
-      ]
-    );
+  // Função para navegar para edição de dados do usuário
+  function handleEditUserData(userData: any) {
+    // Navega para a tela de signUp passando os dados do usuário para edição
+    router.push({
+      pathname: "/(drawer)/signUp",
+      params: {
+        editMode: "true",
+        userId: userData.id || "current",
+        userName: userData.name,
+        userCpf: userData.cpf,
+        userGroup: userData.group,
+        userIsAdmin: userData.isAdmin?.toString() || "false"
+      }
+    });
   }
 
   function handleSearchUserDeleteAction(foundUser: any) {
@@ -283,7 +86,7 @@ export default function Settings() {
           text: "Deletar", 
           style: "destructive",
           onPress: () => {
-            Alert.alert("Sucesso", `Conta de ${foundUser.name} deletada com sucesso (simulação)`);
+            Alert.alert("Sucesso", `Conta de ${foundUser.name} deletada com sucesso`);
           }
         }
       ]
@@ -295,17 +98,17 @@ export default function Settings() {
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.headerBar}>
           <TouchableOpacity
-            onPress={() => setIsAdmin(!isAdmin)}
+            onPress={() => setUser(prev => ({...prev, isAdmin: !prev.isAdmin}))}
             style={styles.roleToggle}
             accessibilityLabel="Trocar tipo de conta"
           >
             <Text style={styles.roleToggleText}>
-              {isAdmin ? "Administrador" : "Usuário"}
+              {user.isAdmin ? "Administrador" : "Usuário"}
             </Text>
           </TouchableOpacity>
         </View>
 
-        {isAdmin && (
+        {user.isAdmin && (
           <View style={styles.searchCard}>
             <View style={styles.searchHeader}>
               <Text style={styles.searchTitle}>Pesquisar Usuário</Text>
@@ -313,7 +116,7 @@ export default function Settings() {
             <TextInput
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholder="Digite nome ou email (mín. 3 caracteres)"
+              placeholder="Digite nome (mín. 3 caracteres)"
               placeholderTextColor="#999"
               style={styles.searchInput}
               autoCapitalize="none"
@@ -328,8 +131,12 @@ export default function Settings() {
                     <Text style={styles.userName}>{foundUser.name}</Text>
                     <View style={styles.userInfo}>
                       <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Email: </Text>
-                        <Text style={styles.infoValue}>{foundUser.email}</Text>
+                        <Text style={styles.infoLabel}>Nome: </Text>
+                        <Text style={styles.infoValue}>{foundUser.name}</Text>
+                      </View>
+                      <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>CPF: </Text>
+                        <Text style={styles.infoValue}>{foundUser.cpf}</Text>
                       </View>
                       <View style={styles.infoRow}>
                         <Text style={styles.infoLabel}>Grupo: </Text>
@@ -340,25 +147,9 @@ export default function Settings() {
                     <View style={styles.buttonsRow}>
                       <TouchableOpacity
                         style={styles.blueButton}
-                        onPress={() => handleSearchUserEmailAction(foundUser)}
+                        onPress={() => handleEditUserData(foundUser)}
                       >
-                        <Text style={styles.blueButtonText}>Alterar Email</Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={styles.blueButton}
-                        onPress={() => handleSearchUserPasswordAction(foundUser)}
-                      >
-                        <Text style={styles.blueButtonText}>Alterar Senha</Text>
-                      </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.buttonsRow}>
-                      <TouchableOpacity
-                        style={styles.blueButton}
-                        onPress={() => handleSearchUserGroupAction(foundUser)}
-                      >
-                        <Text style={styles.blueButtonText}>Alterar Grupo</Text>
+                        <Text style={styles.blueButtonText}>Alterar Dados</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
@@ -376,381 +167,196 @@ export default function Settings() {
                       {searchQuery.length >= 2 ? "Nenhum usuário encontrado" : "Nenhum usuário cadastrado"}
                     </Text>
                     <Text style={styles.noResultsSubtext}>
-                      Tente buscar por nome ou email diferente
+                      Tente buscar por nome diferente
                     </Text>
                   </View>
                 )}
               </>
             )}
+
+            {/* Lista de usuários (sempre visível no modo Admin) */}
+            {searchQuery.length <= 2 && (
+              <View style={styles.allUsersContainer}>
+                <Text style={styles.allUsersTitle}>Todos os Usuários Cadastrados</Text>
+                
+                {/* Seção de Administradores */}
+                <Text style={styles.sectionTitle}>👑 Administradores</Text>
+                
+                {/* Usuário atual se for admin */}
+                {user.isAdmin && (
+                  <View style={styles.adminUserCard}>
+                    <View style={styles.currentUserBadge}>
+                      <Text style={styles.currentUserBadgeText}>👤 Você</Text>
+                    </View>
+                    <Text style={styles.adminUserName}>{user.name}</Text>
+                    <View style={styles.userInfo}>
+                      <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>CPF: </Text>
+                        <Text style={styles.infoValue}>{user.cpf}</Text>
+                      </View>
+
+                      <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Grupo: </Text>
+                        <Text style={styles.infoValue}>{user.group}</Text>
+                      </View>
+                    </View>
+                  </View>
+                )}
+
+                {/* Outros administradores */}
+                {users.filter(registeredUser => 
+                  registeredUser.isAdmin && registeredUser.cpf !== user.cpf
+                ).map((registeredUser) => (
+                  <View key={registeredUser.id} style={styles.adminUserCard}>
+                    <Text style={styles.adminUserName}>{registeredUser.name}</Text>
+                    <View style={styles.userInfo}>
+                      <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Nome: </Text>
+                        <Text style={styles.infoValue}>{registeredUser.name}</Text>
+                      </View>
+                      <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>CPF: </Text>
+                        <Text style={styles.infoValue}>{registeredUser.cpf}</Text>
+                      </View>
+                      <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Grupo: </Text>
+                        <Text style={styles.infoValue}>{registeredUser.group}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.buttonsRow}>
+                      <TouchableOpacity
+                        style={styles.blueButton}
+                        onPress={() => handleEditUserData(registeredUser)}
+                      >
+                        <Text style={styles.blueButtonText}>Alterar Dados</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.redButton}
+                        onPress={() => handleSearchUserDeleteAction(registeredUser)}
+                      >
+                        <Text style={styles.redButtonText}>Deletar Conta</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+
+                {/* Seção de Usuários Normais */}
+                {users.some(user => !user.isAdmin) && (
+                  <>
+                    <Text style={styles.sectionTitle}>👤 Usuários</Text>
+                    
+                    {/* Usuário atual se não for admin */}
+                    {!user.isAdmin && (
+                      <View style={styles.normalUserCard}>
+                        <View style={styles.currentUserBadge}>
+                          <Text style={styles.currentUserBadgeText}>👤 Você</Text>
+                        </View>
+                        <Text style={styles.userName}>{user.name}</Text>
+                        <View style={styles.userInfo}>
+                          <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>CPF: </Text>
+                            <Text style={styles.infoValue}>{user.cpf}</Text>
+                          </View>
+                          <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>Grupo: </Text>
+                            <Text style={styles.infoValue}>{user.group}</Text>
+                          </View>
+                        </View>
+                      </View>
+                    )}
+
+                    {/* Outros usuários normais */}
+                    {users.filter(registeredUser => 
+                      !registeredUser.isAdmin && registeredUser.cpf !== user.cpf
+                    ).map((registeredUser) => (
+                      <View key={registeredUser.id} style={styles.normalUserCard}>
+                        <Text style={styles.userName}>{registeredUser.name}</Text>
+                        <View style={styles.userInfo}>
+                          <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>CPF: </Text>
+                            <Text style={styles.infoValue}>{registeredUser.cpf}</Text>
+                          </View>
+                          <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>Grupo: </Text>
+                            <Text style={styles.infoValue}>{registeredUser.group}</Text>
+                          </View>
+                        </View>
+
+                        <View style={styles.buttonsRow}>
+                          <TouchableOpacity
+                            style={styles.blueButton}
+                            onPress={() => handleEditUserData(registeredUser)}
+                          >
+                            <Text style={styles.blueButtonText}>Alterar Dados</Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            style={styles.redButton}
+                            onPress={() => handleSearchUserDeleteAction(registeredUser)}
+                          >
+                            <Text style={styles.redButtonText}>Deletar Conta</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ))}
+                  </>
+                )}
+
+                {/* Mensagem quando não há usuários cadastrados */}
+                {users.length === 0 && (
+                  <View style={styles.noUsersMessage}>
+                    <Text style={styles.noUsersText}>Nenhum usuário cadastrado ainda</Text>
+                    <Text style={styles.noUsersSubtext}>Os usuários aparecerão aqui quando se cadastrarem</Text>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
         )}
 
-        {isAdmin && <View style={styles.divider} />}
-
-        <View style={styles.card}>
-          <Text style={styles.userName}>{user.name}</Text>
-          <View style={styles.userInfo}>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Email: </Text>
-              <Text style={styles.infoValue}>{user.email}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Grupo: </Text>
-              <Text style={styles.infoValue}>{user.group}</Text>
-            </View>
-          </View>
+        {!user.isAdmin && (
+          <>
+            <View style={styles.divider} />
+            <View style={styles.card}>
+              <Text style={styles.userName}>{user.name}</Text>
+              <View style={styles.userInfo}>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>CPF: </Text>
+                  <Text style={styles.infoValue}>{user.cpf}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Grupo: </Text>
+                  <Text style={styles.infoValue}>{user.group}</Text>
+                </View>
+              </View>
 
           <View style={styles.buttonsRow}>
             <TouchableOpacity
               style={styles.blueButton}
-              onPress={openEmailModal}
+              onPress={() => handleEditUserData(user)}
             >
-              <Text style={styles.blueButtonText}>Alterar Email</Text>
+              <Text style={styles.blueButtonText}>Alterar Dados</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.blueButton}
-              onPress={openPasswordModal}
+              style={styles.redButton}
+              onPress={openDeleteModal}
             >
-              <Text style={styles.blueButtonText}>Alterar Senha</Text>
+              <Text style={styles.redButtonText}>Deletar Conta</Text>
             </TouchableOpacity>
           </View>
 
-          {isAdmin && (
-            <View style={styles.buttonsRow}>
-              <TouchableOpacity
-                style={styles.blueButton}
-                onPress={openGroupModal}
-              >
-                <Text style={styles.blueButtonText}>Alterar Grupo</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.redButton}
-                onPress={openDeleteModal}
-              >
-                <Text style={styles.redButtonText}>Deletar Conta</Text>
-              </TouchableOpacity>
             </View>
-          )}
-        </View>
+          </>
+        )}
 
 
-        <Modal
-          visible={showEmailModal}
-          animationType="fade"
-          transparent={true}
-          statusBarTranslucent={true}
-        >
-          <TouchableOpacity
-            style={styles.modalOverlay}
-            activeOpacity={1}
-            onPress={() => setShowEmailModal(false)}
-          >
-            <KeyboardAvoidingView
-              style={styles.modalOverlayInner}
-              behavior={Platform.OS === "ios" ? "padding" : undefined}
-            >
-              <TouchableOpacity
-                style={[
-                  styles.modalContainer,
-                  {
-                    width: isSmallScreen ? "95%" : 400,
-                    padding: isSmallScreen ? 24 : 20,
-                    transform: isSmallScreen
-                      ? [{ scale: 1.1 }]
-                      : [{ scale: 1 }],
-                  },
-                ]}
-                activeOpacity={1}
-                onPress={(e) => e.stopPropagation()}
-              >
-                <Text
-                  style={[
-                    styles.modalTitle,
-                    { fontSize: isSmallScreen ? 18 : 16 },
-                  ]}
-                >
-                  Alterar Email
-                </Text>
-                <TextInput
-                  value={emailInput}
-                  onChangeText={(t) => {
-                    setEmailInput(t);
-                    setEmailError(validateEmail(t));
-                  }}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  style={styles.input}
-                  placeholder="Digite o novo email"
-                />
-                {emailError ? (
-                  <Text style={styles.errorText}>{emailError}</Text>
-                ) : null}
-
-                <View style={styles.modalButtonsRow}>
-                  <TouchableOpacity
-                    style={[
-                      styles.blueButton, 
-                      styles.modalButton,
-                      (!isEmailChanged || emailError) && styles.disabledButton
-                    ]}
-                    onPress={handleConfirmEmail}
-                    disabled={!isEmailChanged || !!emailError}
-                  >
-                    <Text style={[
-                      styles.blueButtonText,
-                      (!isEmailChanged || emailError) && styles.disabledButtonText
-                    ]}>
-                      Confirmar
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.outlineButton, styles.modalButton]}
-                    onPress={() => setShowEmailModal(false)}
-                  >
-                    <Text style={styles.outlineButtonText}>Cancelar</Text>
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
-            </KeyboardAvoidingView>
-          </TouchableOpacity>
-        </Modal>
 
 
-        <Modal
-          visible={showPasswordModal}
-          animationType="fade"
-          transparent={true}
-          statusBarTranslucent={true}
-        >
-          <TouchableOpacity
-            style={styles.modalOverlay}
-            activeOpacity={1}
-            onPress={() => setShowPasswordModal(false)}
-          >
-            <KeyboardAvoidingView
-              style={styles.modalOverlayInner}
-              behavior={Platform.OS === "ios" ? "padding" : undefined}
-            >
-              <TouchableOpacity
-                style={[
-                  styles.modalContainer,
-                  {
-                    width: isSmallScreen ? "95%" : 400,
-                    padding: isSmallScreen ? 24 : 20,
-                    transform: isSmallScreen
-                      ? [{ scale: 1.1 }]
-                      : [{ scale: 1 }],
-                  },
-                ]}
-                activeOpacity={1}
-                onPress={(e) => e.stopPropagation()}
-              >
-                <Text
-                  style={[
-                    styles.modalTitle,
-                    { fontSize: isSmallScreen ? 18 : 16 },
-                  ]}
-                >
-                  Alterar Senha
-                </Text>
-                <TextInput
-                  value={passwordInput}
-                  onChangeText={(t) => {
-                    setPasswordInput(t);
-                    setPasswordError(validatePassword(t));
-                  }}
-                  secureTextEntry
-                  style={[
-                    styles.input,
-                    isSmallScreen && styles.inputSmall
-                  ]}
-                  placeholder="Nova senha"
-                  placeholderTextColor={isSmallScreen ? "#999" : "#999"}
-                />
-                {passwordError ? (
-                  <Text style={styles.errorText}>{passwordError}</Text>
-                ) : null}
-
-                <TextInput
-                  value={confirmPasswordInput}
-                  onChangeText={(t) => {
-                    setConfirmPasswordInput(t);
-                    setConfirmPasswordError(
-                      t === passwordInput ? "" : "As senhas não conferem"
-                    );
-                  }}
-                  secureTextEntry
-                  style={[
-                    styles.input,
-                    isSmallScreen && styles.inputSmall
-                  ]}
-                  placeholder="Confirmar senha"
-                  placeholderTextColor={isSmallScreen ? "#999" : "#999"}
-                />
-                {confirmPasswordError ? (
-                  <Text style={styles.errorText}>{confirmPasswordError}</Text>
-                ) : null}
-
-                <View style={styles.modalButtonsRow}>
-                  <TouchableOpacity
-                    style={[
-                      styles.blueButton, 
-                      styles.modalButton,
-                      !isPasswordValid && styles.disabledButton
-                    ]}
-                    onPress={handleConfirmPassword}
-                    disabled={!isPasswordValid}
-                  >
-                    <Text style={[
-                      styles.blueButtonText,
-                      !isPasswordValid && styles.disabledButtonText
-                    ]}>
-                      Confirmar
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.outlineButton, styles.modalButton]}
-                    onPress={() => setShowPasswordModal(false)}
-                  >
-                    <Text style={styles.outlineButtonText}>Cancelar</Text>
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
-            </KeyboardAvoidingView>
-          </TouchableOpacity>
-        </Modal>
 
 
-        <Modal
-          visible={showGroupModal}
-          animationType="fade"
-          transparent={true}
-          statusBarTranslucent={true}
-        >
-          <TouchableOpacity
-            style={styles.modalOverlay}
-            activeOpacity={1}
-            onPress={() => setShowGroupModal(false)}
-          >
-            <KeyboardAvoidingView
-              style={styles.modalOverlayInner}
-              behavior={Platform.OS === "ios" ? "padding" : undefined}
-            >
-              <TouchableOpacity
-                style={[
-                  styles.modalContainer,
-                  {
-                    width: isSmallScreen ? "95%" : 400,
-                    padding: isSmallScreen ? 24 : 20,
-                    transform: isSmallScreen
-                      ? [{ scale: 1.1 }]
-                      : [{ scale: 1 }],
-                  },
-                ]}
-                activeOpacity={1}
-                onPress={(e) => e.stopPropagation()}
-              >
-                <Text
-                  style={[
-                    styles.modalTitle,
-                    { fontSize: isSmallScreen ? 18 : 16 },
-                  ]}
-                >
-                  Alterar Grupo
-                </Text>
-
-                <Text style={styles.dropdownLabel}>
-                  Selecione o novo grupo:
-                </Text>
-                <TouchableOpacity
-                  style={styles.dropdownButton}
-                  onPress={() => setShowDropdown(!showDropdown)}
-                >
-                  <Text style={styles.dropdownText}>
-                    {selectedGroup || "Selecionar grupo"}
-                  </Text>
-                  <Text style={styles.dropdownArrow}>
-                    {showDropdown ? "▲" : "▼"}
-                  </Text>
-                </TouchableOpacity>
-
-                {showDropdown && (
-                  <ScrollView
-                    style={styles.dropdownList}
-                    nestedScrollEnabled={true}
-                  >
-                    {hasGroups ? (
-                      availableGroups.map((group) => (
-                        <TouchableOpacity
-                          key={group}
-                          style={[
-                            styles.dropdownItem,
-                            selectedGroup === group &&
-                              styles.dropdownItemSelected,
-                          ]}
-                          onPress={() => {
-                            setSelectedGroup(group);
-                            setShowDropdown(false);
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <Text
-                            style={[
-                              styles.dropdownItemText,
-                              selectedGroup === group &&
-                                styles.dropdownItemTextSelected,
-                            ]}
-                          >
-                            {group}
-                          </Text>
-                        </TouchableOpacity>
-                      ))
-                    ) : (
-                      <View style={styles.emptyGroupContainer}>
-                        <Text style={styles.emptyGroupText}>
-                          Nenhum grupo cadastrado
-                        </Text>
-                        <Text style={styles.emptyGroupSubtext}>
-                          Crie um projeto primeiro para ter grupos disponíveis
-                        </Text>
-                      </View>
-                    )}
-                  </ScrollView>
-                )}
-
-                <View style={styles.modalButtonsRow}>
-                  <TouchableOpacity
-                    style={[
-                      styles.blueButton, 
-                      styles.modalButton,
-                      (!isGroupChanged || !selectedGroup || !hasGroups) && styles.disabledButton
-                    ]}
-                    onPress={handleConfirmGroup}
-                    disabled={!isGroupChanged || !selectedGroup || !hasGroups}
-                  >
-                    <Text style={[
-                      styles.blueButtonText,
-                      (!isGroupChanged || !selectedGroup || !hasGroups) && styles.disabledButtonText
-                    ]}>
-                      Confirmar
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.outlineButton, styles.modalButton]}
-                    onPress={() => setShowGroupModal(false)}
-                  >
-                    <Text style={styles.outlineButtonText}>Cancelar</Text>
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
-            </KeyboardAvoidingView>
-          </TouchableOpacity>
-        </Modal>
 
 
         <Modal
@@ -819,75 +425,7 @@ export default function Settings() {
           </TouchableOpacity>
         </Modal>
 
-        {/* Modal de Nenhum Grupo Disponível */}
-        <Modal
-          visible={showNoGroupsModal}
-          animationType="fade"
-          transparent={true}
-          statusBarTranslucent={true}
-        >
-          <TouchableOpacity
-            style={styles.modalOverlay}
-            activeOpacity={1}
-            onPress={() => setShowNoGroupsModal(false)}
-          >
-            <KeyboardAvoidingView
-              style={styles.modalOverlayInner}
-              behavior={Platform.OS === "ios" ? "padding" : undefined}
-            >
-              <TouchableOpacity
-                style={[
-                  styles.modalContainer,
-                  {
-                    width: isSmallScreen ? "95%" : 400,
-                    padding: isSmallScreen ? 24 : 20,
-                  },
-                ]}
-                activeOpacity={1}
-                onPress={(e) => e.stopPropagation()}
-              >
-                <Text style={[styles.modalTitle, { fontSize: isSmallScreen ? 18 : 16 }]}>
-                  📂 Nenhum Grupo Disponível
-                </Text>
-                
-                <Text style={styles.noGroupsModalText}>
-                  {projects.length === 0 
-                    ? "Não há projetos cadastrados no sistema ainda." 
-                    : "Os projetos cadastrados não possuem grupos definidos."
-                  }
-                </Text>
-                
-                <Text style={styles.noGroupsModalSubtext}>
-                  {projects.length === 0 
-                    ? "Para ter grupos disponíveis, você precisa primeiro adicionar algum projeto. Cada projeto pode ter um grupo específico." 
-                    : "Verifique os projetos existentes e certifique-se de que eles possuem grupos definidos."
-                  }
-                </Text>
 
-                <View style={styles.modalButtonsRow}>
-                  <TouchableOpacity
-                    style={[styles.outlineButton, styles.modalButton]}
-                    onPress={() => setShowNoGroupsModal(false)}
-                  >
-                    <Text style={styles.outlineButtonText}>Fechar</Text>
-                  </TouchableOpacity>
-                  
-                  {projects.length === 0 && (
-                    <TouchableOpacity
-                      style={[styles.blueButton, styles.modalButton]}
-                      onPress={() => {
-                        setShowNoGroupsModal(false);
-                        router.push("/(drawer)/addProject");
-                      }}
-                    >
-                      <Text style={styles.blueButtonText}>Adicionar Projeto</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </TouchableOpacity>
-            </KeyboardAvoidingView>
-          </TouchableOpacity>
-        </Modal>
       </ScrollView>
     </ThemedView>
   );
@@ -1172,7 +710,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
     color: "#222",
-    minWidth: 50,
+    minWidth: 35,
   },
   infoValue: {
     fontSize: 14,
@@ -1192,5 +730,125 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 20,
     marginBottom: 25,
+  },
+  
+  // Estilos para lista completa de usuários
+  allUsersContainer: {
+    marginTop: 20,
+  },
+  allUsersTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#082A85",
+    textAlign: "center",
+    marginBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
+    paddingBottom: 8,
+  },
+  
+  // Estilos para o usuário atual (destacado)
+  currentUserCard: {
+    backgroundColor: "#E8F4FD", // Azul muito claro
+    borderWidth: 2,
+    borderColor: "#082A85", // Azul principal
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: "#082A85",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  currentUserBadge: {
+    backgroundColor: "#082A85",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 15,
+    alignSelf: "flex-start",
+    marginBottom: 8,
+  },
+  currentUserBadgeText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  currentUserName: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#082A85", // Nome em azul para destacar
+    marginBottom: 8,
+  },
+  
+  // Estilos para outros usuários
+  otherUserCard: {
+    backgroundColor: "#F8F9FA", // Cinza bem claro
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  
+  // Estilos para seções
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+    marginTop: 20,
+    marginBottom: 12,
+    paddingLeft: 4,
+  },
+  
+  // Estilos para administradores (cor especial dourada/amarela)
+  adminUserCard: {
+    backgroundColor: "#FFF9E6", // Fundo dourado claro
+    borderWidth: 2,
+    borderColor: "#FFB800", // Borda dourada
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: "#FFB800",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  adminUserName: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#B8860B", // Texto dourado escuro
+    marginBottom: 8,
+  },
+  
+  // Estilos para usuários normais
+  normalUserCard: {
+    backgroundColor: "#F8F9FA", // Cinza bem claro
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  
+  // Mensagem quando não há usuários
+  noUsersMessage: {
+    backgroundColor: "#F5F5F5",
+    padding: 24,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 16,
+  },
+  noUsersText: {
+    fontSize: 16,
+    color: "#666",
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  noUsersSubtext: {
+    fontSize: 14,
+    color: "#888",
+    textAlign: "center",
   },
 });
