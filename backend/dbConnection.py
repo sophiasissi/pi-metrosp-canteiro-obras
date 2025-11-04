@@ -1,11 +1,3 @@
-# IMPORTANTE
-# para o backend funcionar é necessário rodar o seguinte código primeiro:
-# pip install flask
-# pip install flask flask_sqlalchemy pymysql
-# pip install flask-cors
-# pip install flask-bcrypt
-
-
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 # from flask_cors import CORS

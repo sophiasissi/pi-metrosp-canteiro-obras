@@ -1,5 +1,6 @@
 from dbConnection import db
 from flask_bcrypt import Bcrypt
+from sqlalchemy import CheckConstraint
 
 bcrypt = Bcrypt()  # responsável por criar e verificar hash de senha
 
@@ -27,5 +28,24 @@ class Usuarios(db.Model):
     # Função para verificar se a senha está correta
     def check_password(self, password):
         return bcrypt.check_password_hash(self.senhaHash, password)
+    
+class Projetos(db.Model):
+    __tablename__ = 'projeto'
+    projetoID = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    grupoID = db.Column(db.Integer, db.ForeignKey('grupo.grupoID', ondelete='CASCADE'), nullable=False)
+    nomeProjeto = db.Column(db.String(255), nullable=False)
+    localizacao = db.Column(db.String(255), nullable=False)
+    dataInicio = db.Column(db.Date, nullable=False)
+    dataFim = db.Column(db.Date)
+    imagemInicial = db.Column(db.LargeBinary)
+
+    __table_args__ = (
+        CheckConstraint('dataFim IS NULL OR dataFim >= dataInicio', name='check_datas_validas'),
+    )
+
+    grupo = db.relationship('Grupos', backref='projetos')
+
+    def __repr__(self):
+        return f'<Projeto {self.nomeProjeto}>'
     
 
