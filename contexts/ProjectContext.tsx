@@ -81,9 +81,12 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
 
           const updatedHistory = [...(project.progressHistory || []), newProgressEntry];
 
+          // TODO: Integração com CNN do backend
+          // O progresso agora virá da análise da CNN que compara a imagem atual com a planta baixa
+          // Futuramente: progress = analysisResult.progressPercentage (resultado da CNN)
           return {
             ...project,
-            progress: progressData.progress,
+            progress: progressData.progress, // Temporário até integração com CNN
             progressHistory: updatedHistory,
           };
         }

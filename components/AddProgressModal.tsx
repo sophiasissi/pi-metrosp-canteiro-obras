@@ -1,14 +1,15 @@
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from "react";
 import {
-    Alert,
-    Image,
-    Modal,
-    Platform,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useProjects } from "../contexts/ProjectContext";
@@ -22,6 +23,7 @@ interface AddProgressModalProps {
 export default function AddProgressModal({ visible, onClose, projectId }: AddProgressModalProps) {
   const { projects, addProgressEntry } = useProjects();
   const [progressImage, setProgressImage] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const project = projects.find(p => p.id === projectId);
 
@@ -93,20 +95,36 @@ export default function AddProgressModal({ visible, onClose, projectId }: AddPro
     }
   };
 
-  const handleSaveProgress = () => {
+  const handleSaveProgress = async () => {
     if (!progressImage) {
       Alert.alert('Erro', 'Por favor, adicione uma foto do progresso.');
       return;
     }
 
-    const currentProgressCount = project?.progressHistory?.length || 0;
-    const newProgressPercent = Math.min(100, (currentProgressCount + 1) * 10);
+    setIsAnalyzing(true);
 
-    addProgressEntry(projectId, {
-      progress: newProgressPercent,
-      image: progressImage,
-    });
-    handleClose();
+    try {
+      // TODO: Integração com CNN do backend
+      // const analysisResult = await analyzProgressWithCNN(progressImage, project.image);
+      
+      // Simulação do tempo de análise da CNN
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Por enquanto, mantemos um progresso temporário até a integração com a CNN
+      // Futuramente, será: progress: analysisResult.progressPercentage
+      const temporaryProgress = Math.min(100, ((project?.progressHistory?.length || 0) + 1) * 10);
+
+      addProgressEntry(projectId, {
+        progress: temporaryProgress,
+        image: progressImage,
+      });
+      
+      setIsAnalyzing(false);
+      handleClose();
+    } catch (error) {
+      setIsAnalyzing(false);
+      Alert.alert('Erro', 'Falha ao analisar o progresso. Tente novamente.');
+    }
   };
 
   const handleClose = () => {
@@ -147,19 +165,42 @@ export default function AddProgressModal({ visible, onClose, projectId }: AddPro
           {}
           <View style={styles.buttonContainer}>
             <TouchableOpacity
-              style={styles.confirmButton}
+              style={[
+                styles.confirmButton, 
+                (isAnalyzing || !progressImage) && styles.buttonDisabled
+              ]}
               onPress={handleSaveProgress}
+              disabled={isAnalyzing || !progressImage}
             >
-              <Text style={styles.confirmButtonText}>Confirmar</Text>
+              <Text style={[
+                styles.confirmButtonText,
+                !progressImage && styles.disabledButtonText
+              ]}>
+                Confirmar
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.cancelButton}
+              style={[styles.cancelButton, isAnalyzing && styles.buttonDisabled]}
               onPress={handleClose}
+              disabled={isAnalyzing}
             >
               <Text style={styles.cancelButtonText}>Cancelar</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Loading de Análise */}
+          {isAnalyzing && (
+            <View style={styles.analysisOverlay}>
+              <View style={styles.analysisContainer}>
+                <ActivityIndicator size="large" color="#001489" />
+                <Text style={styles.analysisTitle}>Analisando progresso...</Text>
+                <Text style={styles.analysisSubtitle}>
+                  Comparando com a planta baixa
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
       </View>
     </Modal>
@@ -237,6 +278,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
+  disabledButtonText: {
+    color: "#CCCCCC",
+  },
   cancelButton: {
     backgroundColor: "transparent",
     paddingVertical: 14,
@@ -249,5 +293,37 @@ const styles = StyleSheet.create({
     color: "#001489",
     fontSize: 16,
     fontWeight: "normal",
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+    backgroundColor: "#E0E0E0",
+  },
+  analysisOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 15,
+  },
+  analysisContainer: {
+    alignItems: 'center',
+    padding: 30,
+  },
+  analysisTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#001489',
+    marginTop: 15,
+    textAlign: 'center',
+  },
+  analysisSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 8,
+    textAlign: 'center',
   },
 });
