@@ -387,47 +387,54 @@ export default function AddProjectScreen() {
     }
   };
 
-  const handleCreateProject = () => {
-    if (!validateFields()) {
-      return;
-    }
+  const handleCreateProject = async () => {
+  if (!validateFields()) {
+    return;
+  }
 
-    const periodString = startDate && endDate ? `${formatDate(startDate)} até ${formatDate(endDate)}` : "";
+  try {
+    const base64Image = projectImage
+      ? await fetch(projectImage)
+          .then((res) => res.blob())
+          .then(
+            (blob) =>
+              new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.readAsDataURL(blob);
+              })
+          )
+      : null;
 
-
-    const progressOptions = [10, 50, 80, 100];
-    const randomProgress = progressOptions[Math.floor(Math.random() * progressOptions.length)];
-
-    const newProject = {
+    const body = {
+      group,
       name: projectName,
-      location: location,
-      period: periodString,
-      group: group,
-      image: projectImage || undefined,
-      progress: randomProgress,
+      location,
+      startDate: startDate ? startDate.toISOString().split("T")[0] : null,
+      endDate: endDate ? endDate.toISOString().split("T")[0] : null,
+      image: base64Image,
     };
 
-    addProject(newProject);
+    const response = await fetch("http://localhost:5000/projetos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
 
+    const result = await response.json();
 
-    setProjectName("");
-    setLocation("");
-    setStartDate(null);
-    setEndDate(null);
-    setGroup("");
-    setProjectImage(null);
+    if (response.ok) {
+      Alert.alert("Sucesso!", result.message);
+      router.replace("/(drawer)/home");
+    } else {
+      Alert.alert("Erro", result.error || "Não foi possível criar o projeto.");
+    }
+  } catch (error) {
+    console.error(error);
+    Alert.alert("Erro", "Falha ao conectar com o servidor Flask.");
+  }
+};
 
-
-    router.replace("/(drawer)/home");
-
-
-    setTimeout(() => {
-      Alert.alert(
-        "Sucesso!",
-        `Projeto "${newProject.name}" criado com sucesso!`
-      );
-    }, 100);
-  };
 
   return (
     <KeyboardAvoidingView
