@@ -3,14 +3,22 @@ from flask_bcrypt import Bcrypt
 
 bcrypt = Bcrypt()  # responsável por criar e verificar hash de senha
 
+
+class Grupos(db.Model):
+    __tablename__ = 'grupo'
+    grupoID = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    nomeGrupo = db.Column(db.String(255), unique=True, nullable = False)
+
 class Usuarios(db.Model):
     __tablename__ = 'usuario'  # nome exato da tabela no banco
-    pessoalID = db.Column(db.Integer, primary_key=True)
+    pessoalID = db.Column(db.Integer, primary_key=True, autoincrement=True)
     nomeCompleto = db.Column(db.String(255), nullable = False)
     cpf = db.Column(db.String(11), unique=True, nullable=False)
     senhaHash = db.Column(db.String(255), nullable=False)
-    grupo = db.Column(db.String(255), nullable = False)
+    grupoID = db.Column(db.Integer, db.ForeignKey('grupo.grupoID'))    
     adm = db.Column(db.Boolean, default = False)
+
+    grupo = db.relationship('Grupos', backref='usuarios')  # acesso: usuario.grupo.nomeGrupo
 
     # Função para criar hash da senha
     def set_password(self, password):
@@ -19,3 +27,5 @@ class Usuarios(db.Model):
     # Função para verificar se a senha está correta
     def check_password(self, password):
         return bcrypt.check_password_hash(self.senhaHash, password)
+    
+

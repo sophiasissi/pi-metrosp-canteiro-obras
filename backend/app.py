@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify
 from dbConnection import init_app, db
-from models import Usuarios
+from models import Grupos, Usuarios
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 init_app(app)
 
 @app.route('/')
@@ -16,7 +18,7 @@ def register():
     cpf = data.get('cpf')
     senha = data.get('senha')
     confirmarSenha = data.get('confirmarSenha')
-    grupo = data.get('grupo')
+    nomeGrupo = data.get('nomeGrupo')
     adm = data.get('adm', False)  # se não enviar, assume False
 
     # Verifica se já existe um usuário com esse email
@@ -25,12 +27,18 @@ def register():
     
     if senha != confirmarSenha:
         return jsonify({'message': 'Senhas diferentes'}), 400
+    
+    grupo = Grupos.query.filter_by(nomeGrupo=nomeGrupo).first()
+    if not grupo:
+        grupo = Grupos(nomeGrupo=nomeGrupo)
+        db.session.add(grupo)
+        db.session.commit()  # precisa commitar pra gerar o grupoID
 
     # Cria o usuário
     novo_usuario = Usuarios(
         nomeCompleto=nome,
         cpf=cpf,
-        grupo=grupo,
+        grupoID=grupo.grupoID,
         adm=adm
     )
     # Cria o hash da senha
@@ -64,7 +72,7 @@ def login():
             'pessoalID': usuario.pessoalID,
             'nomeCompleto': usuario.nomeCompleto,
             'cpf': usuario.cpf,
-            'grupo': usuario.grupo,
+            'grupoID': usuario.grupoID,
             'adm': usuario.adm
         }
     }), 200
@@ -77,22 +85,24 @@ def showInfo(cpf):
     if not usuario:
         return jsonify({'error': 'Usuário não encontrado'}), 404
     
+    grupo = Grupos.query.filter_by(grupoID=usuario.grupoID).first()
     return jsonify({
         'cpf': usuario.cpf,
         'nomeCompleto': usuario.nomeCompleto,
-        'grupo': usuario.grupo,
+        'nomeGrupo': usuario.grupo.nomeGrupo if usuario.grupo else None,
         'adm': usuario.adm
     })
     
+
 @app.route('/api/settings/change-info', methods=['PUT'])
 def changeInfo():
-
     data = request.json
     cpf = data.get('cpf')
     
     usuario = Usuarios.query.filter_by(cpf=cpf).first()
     if not usuario:
         return jsonify({'error': 'Usuário não encontrado'}), 404
+
 
     # Atualiza o nome se mudou
     nome_completo = data.get('nomeCompleto')
@@ -107,10 +117,21 @@ def changeInfo():
             return jsonify({'message': 'As senhas não coincidem'}), 400
         usuario.senha = usuario.set_password(senha)
 
+
     # Atualiza grupo se mudou
-    grupo = data.get('grupo')
-    if grupo and grupo != usuario.grupo:
-        usuario.grupo = grupo
+    nomeGrupo = data.get('nomeGrupo')
+    if nomeGrupo:
+        grupo_existente = Grupos.query.filter_by(nomeGrupo=nomeGrupo).first()
+        if not grupo_existente:
+            # cria novo grupo se não existir
+            novo_grupo = Grupos(nomeGrupo=nomeGrupo)
+            db.session.add(novo_grupo)
+            db.session.commit()
+            usuario.grupoID = novo_grupo.grupoID
+        else:
+            # se já existir, apenas vincula
+            if usuario.grupoID != grupo_existente.grupoID:
+                usuario.grupoID = grupo_existente.grupoID
 
     # Atualiza adm se mudou
     admn = data.get('adm')
