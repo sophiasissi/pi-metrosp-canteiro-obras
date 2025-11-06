@@ -388,52 +388,52 @@ export default function AddProjectScreen() {
   };
 
   const handleCreateProject = async () => {
-  if (!validateFields()) {
-    return;
-  }
-
-  try {
-    const base64Image = projectImage
-      ? await fetch(projectImage)
-          .then((res) => res.blob())
-          .then(
-            (blob) =>
-              new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.readAsDataURL(blob);
-              })
-          )
-      : null;
-
-    const body = {
-      group,
-      name: projectName,
-      location,
-      startDate: startDate ? startDate.toISOString().split("T")[0] : null,
-      endDate: endDate ? endDate.toISOString().split("T")[0] : null,
-      image: base64Image,
-    };
-
-    const response = await fetch("http://localhost:5000/projetos", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    const result = await response.json();
-
-    if (response.ok) {
-      Alert.alert("Sucesso!", result.message);
-      router.replace("/(drawer)/home");
-    } else {
-      Alert.alert("Erro", result.error || "Não foi possível criar o projeto.");
+    if (!validateFields()) {
+      return;
     }
-  } catch (error) {
-    console.error(error);
-    Alert.alert("Erro", "Falha ao conectar com o servidor Flask.");
-  }
-};
+
+    try {
+      const base64Image = projectImage
+        ? await fetch(projectImage)
+            .then((res) => res.blob())
+            .then(
+              (blob) =>
+                new Promise((resolve) => {
+                  const reader = new FileReader();
+                  reader.onloadend = () => resolve(reader.result);
+                  reader.readAsDataURL(blob);
+                })
+            )
+        : null;
+
+      const body = {
+        group,
+        name: projectName,
+        location,
+        startDate: startDate ? startDate.toISOString().split("T")[0] : null,
+        endDate: endDate ? endDate.toISOString().split("T")[0] : null,
+        image: base64Image,
+      };
+
+      const response = await fetch("http://localhost:5000/projetos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        Alert.alert("Sucesso!", result.message);
+        router.replace("/(drawer)/home");
+      } else {
+        Alert.alert("Erro", result.error || "Não foi possível criar o projeto.");
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Erro", "Falha ao conectar com o servidor Flask.");
+    }
+  };
 
 
   return (
