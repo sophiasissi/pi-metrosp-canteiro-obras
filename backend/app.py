@@ -3,7 +3,9 @@ from dbConnection import init_app, db
 from models import *
 from flask_cors import CORS
 from routes.usuarios_routes import usuarios_bp
-# from routes.projetos_routes import projetos_bp
+from routes.projetos_routes import projetos_bp
+from dotenv import load_dotenv
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
