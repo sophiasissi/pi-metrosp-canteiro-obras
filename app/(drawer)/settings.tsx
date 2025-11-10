@@ -22,9 +22,9 @@ export default function Settings() {
   const { users, getAvailableGroups, hasUsers } = useUsers();
 
   const [user, setUser] = useState({
-    name: "Nome Usuário",
-    group: "Amarelo",
-    cpf: "123.456.789-00", // CPF do usuário atual
+    name: "Sophia Sissi Curcio Guedes",
+    group: "amarelo",
+    cpf: "384.645.928-33", // CPF do usuário atual
     isAdmin: true, // O usuário atual é admin para poder acessar esta funcionalidade
   });
 
