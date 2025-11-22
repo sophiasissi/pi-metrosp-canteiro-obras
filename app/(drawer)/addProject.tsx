@@ -521,6 +521,7 @@ export default function AddProjectScreen() {
 };
 
 
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}

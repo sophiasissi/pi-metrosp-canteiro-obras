@@ -1,113 +1,85 @@
 from flask import Blueprint, request, jsonify
 from dbConnection import db
 from models import Projetos, Grupos
-from datetime import datetime
-import base64
-import uuid
-import os
+from utils.uploadS3 import upload_file_to_s3, delete_file_from_s3
 
-projetos_bp = Blueprint('projetos', __name__)
+projetos_bp = Blueprint('projetos_bp', __name__)
 
-@projetos_bp.route('/projetos', methods=['POST'])
-def create_projeto():
-    try:
-        data = request.get_json()
-        
-        if not data:
-            return jsonify({"error": "Nenhum dado enviado"}), 400
-        
-        # Validar campos obrigatórios
-        required_fields = ['name', 'location', 'startDate', 'endDate', 'group']
-        for field in required_fields:
-            if not data.get(field):
-                return jsonify({"error": f"Campo {field} é obrigatório"}), 400
-        
-        # Buscar o grupo pelo nome
-        grupo = Grupos.query.filter_by(nomeGrupo=data['group']).first()
-        if not grupo:
-            return jsonify({"error": f"Grupo '{data['group']}' não encontrado"}), 404
-        
-        # Processar imagem se enviada
-        image_binary = None
-        if data.get('image'):
-            try:
-                # Decodificar base64
-                image_data = data['image'].split(',')[1] if ',' in data['image'] else data['image']
-                image_binary = base64.b64decode(image_data)
-                    
-            except Exception as e:
-                print(f"Erro ao processar imagem: {e}")
-                # Continuar sem imagem se houver erro
-                pass
-        
-        # Converter datas
-        try:
-            start_date = datetime.strptime(data['startDate'], '%Y-%m-%d').date()
-            end_date = datetime.strptime(data['endDate'], '%Y-%m-%d').date()
-        except ValueError:
-            return jsonify({"error": "Formato de data inválido. Use YYYY-MM-DD"}), 400
-        
-        # Criar projeto
-        novo_projeto = Projetos(
-            nomeProjeto=data['name'],
-            localizacao=data['location'],
-            dataInicio=start_date,
-            dataFim=end_date,
-            grupoID=grupo.grupoID,
-            imagemInicial=image_binary
-        )
-        
-        db.session.add(novo_projeto)
-        db.session.commit()
-        
-        return jsonify({
-            "message": "Projeto criado com sucesso!",
-            "projeto_id": novo_projeto.projetoID
-        }), 201
-        
-    except Exception as e:
-        db.session.rollback()
-        print(f"Erro ao criar projeto: {e}")
-        return jsonify({"error": "Erro interno do servidor"}), 500
+@projetos_bp.route("/projects/add", methods=["POST"])
+def add():
+    nomeProjeto = request.form.get("nomeProjeto")
+    localizacao = request.form.get("localizacao")
+    dataInicio = request.form.get("dataInicio")
+    dataFim = request.form.get("dataFim")
+    nomeGrupo = request.form.get("nomeGrupo")
+    imagemInicial = request.files.get("imagemInicial")  # <- Arquivo vem aqui
 
-@projetos_bp.route('/projetos', methods=['GET'])
-def get_projetos():
-    try:
-        projetos = Projetos.query.all()
-        projetos_list = []
-        
-        for projeto in projetos:
-            projetos_list.append({
-                'id': projeto.projetoID,
-                'nome': projeto.nomeProjeto,
-                'localizacao': projeto.localizacao,
-                'data_inicio': projeto.dataInicio.isoformat() if projeto.dataInicio else None,
-                'data_fim': projeto.dataFim.isoformat() if projeto.dataFim else None,
-                'grupo': projeto.grupo.nomeGrupo if projeto.grupo else None,
-                'tem_imagem': projeto.imagemInicial is not None
-            })
-        
-        return jsonify(projetos_list), 200
-        
-    except Exception as e:
-        print(f"Erro ao buscar projetos: {e}")
-        return jsonify({"error": "Erro interno do servidor"}), 500
+    grupo = Grupos.query.filter_by(nomeGrupo=nomeGrupo).first()
 
-@projetos_bp.route('/projetos/<int:projeto_id>', methods=['GET'])
-def get_projeto(projeto_id):
-    try:
-        projeto = Projetos.query.get_or_404(projeto_id)
-        
-        return jsonify({
-            'id': projeto.projetoID,
-            'nome': projeto.nomeProjeto,
-            'localizacao': projeto.localizacao,
-            'data_inicio': projeto.dataInicio.isoformat() if projeto.dataInicio else None,
-            'data_fim': projeto.dataFim.isoformat() if projeto.dataFim else None,
-            'grupo': projeto.grupo.nomeGrupo if projeto.grupo else None,
-            'tem_imagem': projeto.imagemInicial is not None
-        }), 200
-        
-    except Exception as e:
-        print(f"Erro ao buscar projeto: {e}")
-        return jsonify({"error": "Projeto não encontrado"}), 404
+    if Projetos.query.filter_by(nomeProjeto=nomeProjeto, grupoID=grupo.grupoID).first():
+        return jsonify({'message': 'Projeto já existe'}), 400
+    
+    imagem_url = upload_file_to_s3(imagemInicial, folder="projetos")
+    
+    novo_projeto = Projetos(
+        grupoID=grupo.grupoID,
+        nomeProjeto=nomeProjeto,
+        localizacao=localizacao,
+        dataInicio=dataInicio,
+        dataFim=dataFim,
+        imagemInicial=imagem_url
+    )
+
+    # Salva no banco
+    db.session.add(novo_projeto)
+    db.session.commit()
+
+    return jsonify({'message': f'Projeto {nomeProjeto} cadastrado com sucesso!'}), 201
+
+@projetos_bp.route("/projects/remove/<int:projetoID>", methods=["POST"])
+def remove(projetoID):
+    
+    projeto = Projetos.query.filter_by(projetoID=projetoID).first()
+
+    if not projeto:
+        return jsonify({"message": "Projeto não encontrado"}), 404
+    
+    if projeto.imagemInicial:
+        delete_file_from_s3(projeto.imagemInicial)
+
+    # --- remover imagens de progresso (se quiser futuramente) ---
+    # exemplo: ImagensProgresso.query.filter_by(projetoID=projetoID).delete()
+
+    db.session.delete(projeto)
+    db.session.commit()
+
+    return jsonify({"message": "Projeto removido com sucesso"}), 200
+
+@projetos_bp.route("/projects/show/<int:projetoID>", methods=["GET"])
+def show_projeto(projetoID):
+
+    projeto = Projetos.query.filter_by(projetoID=projetoID).first()
+
+    if not projeto:
+        return jsonify({"message": "Projeto não encontrado"}), 404
+
+    # Pega as imagens de progresso
+    imagens_progresso = [
+        {
+            "imagemID": img.imagemID,
+            "url": img.caminhoImagem,
+            "descricao": img.descricao,
+            "dataEnvio": img.dataEnvio.strftime("%Y-%m-%d %H:%M:%S") if img.dataEnvio else None
+        }
+        for img in projeto.imagens_progresso
+    ]
+
+    return jsonify({
+        "projetoID": projeto.projetoID,
+        "nomeProjeto": projeto.nomeProjeto,
+        "localizacao": projeto.localizacao,
+        "dataInicio": projeto.dataInicio.strftime("%Y-%m-%d"),
+        "dataFim": projeto.dataFim.strftime("%Y-%m-%d"),
+        "imagemInicial": projeto.imagemInicial,
+        "imagensProgresso": imagens_progresso
+    }), 200

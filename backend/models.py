@@ -12,7 +12,7 @@ class Grupos(db.Model):
 
 class Usuarios(db.Model):
     __tablename__ = 'usuario'  # nome exato da tabela no banco
-    pessoalID = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    usuarioID = db.Column(db.Integer, primary_key=True, autoincrement=True)
     nomeCompleto = db.Column(db.String(255), nullable = False)
     cpf = db.Column(db.String(11), unique=True, nullable=False)
     senhaHash = db.Column(db.String(255), nullable=False)
@@ -36,8 +36,8 @@ class Projetos(db.Model):
     nomeProjeto = db.Column(db.String(255), nullable=False)
     localizacao = db.Column(db.String(255), nullable=False)
     dataInicio = db.Column(db.Date, nullable=False)
-    dataFim = db.Column(db.Date)
-    imagemInicial = db.Column(db.LargeBinary)
+    dataFim = db.Column(db.Date, nullable=False)
+    imagemInicial = db.Column(db.String(255), nullable=False)
 
     __table_args__ = (
         CheckConstraint('dataFim IS NULL OR dataFim >= dataInicio', name='check_datas_validas'),
@@ -49,3 +49,13 @@ class Projetos(db.Model):
         return f'<Projeto {self.nomeProjeto}>'
     
 
+class ImagensProgresso(db.Model):
+    __tablename__ = 'imagens_progresso'
+
+    imagemID = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    projetoID = db.Column(db.Integer, db.ForeignKey('projeto.projetoID', ondelete='CASCADE'), nullable=False)
+    dataEnvio = db.Column(db.DateTime)
+    descricao = db.Column(db.String(255))
+    caminhoImagem = db.Column(db.String(255), nullable=False)
+
+    projeto = db.relationship('Projetos', backref='imagens_progresso')
