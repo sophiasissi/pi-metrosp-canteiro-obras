@@ -1,45 +1,67 @@
+import { router } from "expo-router";
 import React, { useState } from "react";
 import {
   Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
-  Text,
   View,
   useWindowDimensions,
-  KeyboardAvoidingView,
-  ScrollView,
-  Platform,
 } from "react-native";
-import { router } from "expo-router";
 import Icon from "react-native-vector-icons/FontAwesome";
+import { cleanCPF, formatCPF, validateCPF } from "../../utils/cpfValidator";
 
 export default function LoginScreen() {
   const { width } = useWindowDimensions();
   const isLargeScreen = width > 600;
 
-  const [email, setEmail] = useState("");
+  const [cpf, setCpf] = useState("");
   const [senha, setSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
-  const [emailError, setEmailError] = useState("");
+  const [cpfError, setCpfError] = useState("");
   const [senhaError, setSenhaError] = useState("");
 
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+  const handleCpfChange = (text: string) => {
+    // Usa o formatador do utilitário
+    const formattedCpf = formatCPF(text);
+    const cleanedCpf = cleanCPF(text);
+    
+    if (cleanedCpf.length <= 11) {
+      setCpf(formattedCpf);
+      
+      // Valida o CPF em tempo real quando tiver 11 dígitos
+      if (cleanedCpf.length === 11) {
+        const cpfValidation = validateCPF(formattedCpf);
+        if (!cpfValidation.isValid) {
+          setCpfError(cpfValidation.message || "CPF inválido");
+        } else {
+          setCpfError("");
+        }
+      } else {
+        // Limpa erro se ainda está digitando
+        if (cpfError) setCpfError("");
+      }
+    }
   };
 
   const validateFields = () => {
     let isValid = true;
 
-    if (!email.trim()) {
-      setEmailError("Email é obrigatório");
-      isValid = false;
-    } else if (!validateEmail(email)) {
-      setEmailError("Email inválido");
+    if (!cpf.trim()) {
+      setCpfError("CPF é obrigatório");
       isValid = false;
     } else {
-      setEmailError("");
+      const cpfValidation = validateCPF(cpf);
+      if (!cpfValidation.isValid) {
+        setCpfError(cpfValidation.message || "CPF inválido");
+        isValid = false;
+      } else {
+        setCpfError("");
+      }
     }
 
     if (!senha.trim()) {
@@ -90,24 +112,21 @@ export default function LoginScreen() {
         />
 
         <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Email:</Text>
+          <Text style={styles.label}>CPF:</Text>
           <TextInput
             style={[
               styles.input,
               isLargeScreen && styles.inputLarge,
-              emailError ? styles.inputError : null
+              cpfError ? styles.inputError : null
             ]}
-            placeholder="Digite seu email"
+            placeholder="Digite seu CPF"
             placeholderTextColor="#B0B0B0"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            value={email}
-            onChangeText={(text) => {
-              setEmail(text);
-              if (emailError) setEmailError("");
-            }}
+            keyboardType="numeric"
+            value={cpf}
+            onChangeText={handleCpfChange}
+            maxLength={14} // XXX.XXX.XXX-XX
           />
-          {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+          {cpfError ? <Text style={styles.errorText}>{cpfError}</Text> : null}
         </View>
         <View style={styles.fieldContainer}>
           <Text style={styles.label}>Senha:</Text>
