@@ -11,14 +11,14 @@ app = Flask(__name__)
 CORS(app)
 init_app(app)
 
+
 @app.route('/')
 def index():
     return {'message': 'Conexão com o banco funcionando!'}
 
+
 app.register_blueprint(usuarios_bp, url_prefix='/api')
-# app.register_blueprint(projetos_bp, url_prefix='/api')
-
-
+app.register_blueprint(projetos_bp, url_prefix='/api')
 
 
 if __name__ == '__main__':

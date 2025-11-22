@@ -2,10 +2,9 @@ from flask import Blueprint, request, jsonify
 from dbConnection import db
 from models import Usuarios, Grupos
 
-
 usuarios_bp = Blueprint('usuarios_bp', __name__)
 
-@usuarios_bp.route('/register', methods=['POST'])
+@usuarios_bp.route('/user/register', methods=['POST'])
 def register():
     data = request.json  # pega os dados enviados pelo React
     nome = data.get('nomeCompleto')
@@ -44,7 +43,7 @@ def register():
 
     return jsonify({'message': f'Usuário {nome} cadastrado com sucesso!'}), 201
 
-@usuarios_bp.route('/login', methods=['POST'])
+@usuarios_bp.route('/user/login', methods=['POST'])
 def login():
     data = request.json  # pega os dados enviados pelo React
     cpf = data.get('cpf')
@@ -63,7 +62,7 @@ def login():
     return jsonify({
         'message': f'Login realizado com sucesso!',
         'usuario': {
-            'pessoalID': usuario.pessoalID,
+            'usuarioID': usuario.usuarioID,
             'nomeCompleto': usuario.nomeCompleto,
             'cpf': usuario.cpf,
             'grupoID': usuario.grupoID,
@@ -72,14 +71,13 @@ def login():
     }), 200
 
 
-@usuarios_bp.route('/settings/show-info/<cpf>', methods = ['GET'])
+@usuarios_bp.route('/user/settings/show-info/<cpf>', methods = ['GET'])
 def showInfo(cpf):
     usuario= Usuarios.query.filter_by(cpf=cpf).first()  # busca pelo CPF
 
     if not usuario:
         return jsonify({'error': 'Usuário não encontrado'}), 404
     
-    grupo = Grupos.query.filter_by(grupoID=usuario.grupoID).first()
     return jsonify({
         'cpf': usuario.cpf,
         'nomeCompleto': usuario.nomeCompleto,
@@ -88,10 +86,11 @@ def showInfo(cpf):
     })
     
 
-@usuarios_bp.route('/settings/change-info', methods=['PUT'])
+@usuarios_bp.route('/user/settings/change-info', methods=['PUT'])
 def changeInfo():
     data = request.json
     cpf = data.get('cpf')
+    
     
     usuario = Usuarios.query.filter_by(cpf=cpf).first()
     if not usuario:
@@ -102,6 +101,7 @@ def changeInfo():
     nome_completo = data.get('nomeCompleto')
     if nome_completo and nome_completo != usuario.nomeCompleto:
         usuario.nomeCompleto = nome_completo
+
 
     # Atualiza a senha apenas se veio e confirmou corretamente
     senha = data.get('senha')
@@ -136,3 +136,5 @@ def changeInfo():
     db.session.commit()
     
     return jsonify({'message': 'Usuário atualizado com sucesso'})
+
+

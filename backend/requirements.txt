@@ -6,3 +6,5 @@ pip install flask-cors
 pip install flask-bcrypt
 import axios from "axios" - não lembro o comando
 pip install boto3 python-dotenv
+pip install cryptography
+
