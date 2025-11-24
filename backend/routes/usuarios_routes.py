@@ -137,4 +137,17 @@ def changeInfo():
     
     return jsonify({'message': 'Usuário atualizado com sucesso'})
 
+@usuarios_bp.route('/user/delete', methods=['DELETE'])
+def delete():
+    data = request.json  # pega os dados enviados pelo React
+    cpf = data.get('cpf')
 
+    usuario = Usuarios.query.filter_by(cpf=cpf).first()
+
+    if not usuario:
+        return jsonify({'message': 'Usuário não encontrado'}), 404
+
+    db.session.delete(usuario)
+    db.session.commit()
+
+    return jsonify({'message': f'Usuário {cpf} removido com sucesso!'}), 200

@@ -36,7 +36,7 @@ def add():
 
     return jsonify({'message': f'Projeto {nomeProjeto} cadastrado com sucesso!'}), 201
 
-@projetos_bp.route("/projects/remove/<int:projetoID>", methods=["POST"])
+@projetos_bp.route("/projects/remove/<int:projetoID>", methods=["DELETE"])
 def remove(projetoID):
     
     projeto = Projetos.query.filter_by(projetoID=projetoID).first()
@@ -67,9 +67,8 @@ def show_projeto(projetoID):
     imagens_progresso = [
         {
             "imagemID": img.imagemID,
-            "url": img.caminhoImagem,
-            "descricao": img.descricao,
-            "dataEnvio": img.dataEnvio.strftime("%Y-%m-%d %H:%M:%S") if img.dataEnvio else None
+            "caminhoImagem": img.caminhoImagem,
+            "porcentagem": img.porcentagem
         }
         for img in projeto.imagens_progresso
     ]
@@ -83,3 +82,18 @@ def show_projeto(projetoID):
         "imagemInicial": projeto.imagemInicial,
         "imagensProgresso": imagens_progresso
     }), 200
+
+@projetos_bp.route("/projects/change/<int:projetoID>", methods=["PUT"])
+def change_projeto(projetoID):
+    projeto = Projetos.query.filter_by(projetoID=projetoID).first()
+
+    if not projeto:
+        return jsonify({"message": "Projeto não encontrado"}), 404
+
+    data = request.json
+
+    projeto.dataFim = data.get("dataFim", projeto.dataFim)
+
+    db.session.commit()
+
+    return jsonify({"message": "Projeto atualizado com sucesso"}), 200
