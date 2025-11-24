@@ -1,32 +1,20 @@
 import React, { createContext, ReactNode, useContext, useState } from 'react';
+import { apiService } from '../services/apiService';
+import type { ProgressImage, Project } from '../types/api';
 
-export interface ProgressEntry {
-  id: string;
-  projectId: string;
-  progress: number;
-  image?: string;
-  observations?: string;
-  createdAt: Date;
-}
-
-export interface Project {
-  id: string;
-  name: string;
-  location: string;
-  period: string;
-  group: string;
-  createdAt: Date;
-  image?: string;
-  progress: number;
-  progressHistory?: ProgressEntry[];
-}
+// Alias para compatibilidade
+export type ProgressEntry = ProgressImage;
 
 interface ProjectContextType {
   projects: Project[];
-  addProject: (project: Omit<Project, 'id' | 'createdAt'>) => void;
-  updateProject: (id: string, updates: Partial<Project>) => void;
-  deleteProject: (id: string) => void;
-  addProgressEntry: (projectId: string, progressData: Omit<ProgressEntry, 'id' | 'projectId' | 'createdAt'>) => void;
+  isLoading: boolean;
+  error: string | null;
+  addProject: (formData: FormData) => Promise<boolean>;
+  updateProject: (projetoID: number, updates: { dataFim: string }) => Promise<boolean>;
+  deleteProject: (projetoID: number) => Promise<boolean>;
+  getProject: (projetoID: number) => Promise<Project | null>;
+  addProgressEntry: (projetoID: number, formData: FormData) => Promise<{ success: boolean; porcentagem?: number; error?: string }>;
+  refreshProjects: () => void;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -45,64 +33,143 @@ interface ProjectProviderProps {
 
 export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) => {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const addProject = (projectData: Omit<Project, 'id' | 'createdAt'>) => {
-    const newProject: Project = {
-      ...projectData,
-      id: Date.now().toString(),
-      createdAt: new Date(),
-    };
-
-    setProjects(prev => [newProject, ...prev]);
+  const addProject = async (formData: FormData): Promise<boolean> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await apiService.addProject(formData);
+      if (result.success) {
+        refreshProjects();
+        return true;
+      } else {
+        setError(result.error || 'Erro ao adicionar projeto');
+        return false;
+      }
+    } catch (err) {
+      setError('Erro de conexão');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const updateProject = (id: string, updates: Partial<Project>) => {
-    setProjects(prev =>
-      prev.map(project =>
-        project.id === id ? { ...project, ...updates } : project
-      )
-    );
+  const updateProject = async (projetoID: number, updates: { dataFim: string }): Promise<boolean> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await apiService.updateProject(projetoID, updates);
+      if (result.success) {
+        setProjects(prev =>
+          prev.map(project =>
+            project.projetoID === projetoID ? { ...project, ...updates } : project
+          )
+        );
+        return true;
+      } else {
+        setError(result.error || 'Erro ao atualizar projeto');
+        return false;
+      }
+    } catch (err) {
+      setError('Erro de conexão');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const deleteProject = (id: string) => {
-    setProjects(prev => prev.filter(project => project.id !== id));
+  const deleteProject = async (projetoID: number): Promise<boolean> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await apiService.removeProject(projetoID);
+      if (result.success) {
+        setProjects(prev => prev.filter(project => project.projetoID !== projetoID));
+        return true;
+      } else {
+        setError(result.error || 'Erro ao deletar projeto');
+        return false;
+      }
+    } catch (err) {
+      setError('Erro de conexão');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const addProgressEntry = (projectId: string, progressData: Omit<ProgressEntry, 'id' | 'projectId' | 'createdAt'>) => {
-    setProjects(prev =>
-      prev.map(project => {
-        if (project.id === projectId) {
-          const newProgressEntry: ProgressEntry = {
-            ...progressData,
-            id: Date.now().toString(),
-            projectId,
-            createdAt: new Date(),
-          };
+  const getProject = async (projetoID: number): Promise<Project | null> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await apiService.getProject(projetoID);
+      if (result.success && result.data) {
+        return result.data;
+      } else {
+        setError(result.error || 'Projeto não encontrado');
+        return null;
+      }
+    } catch (err) {
+      setError('Erro de conexão');
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-          const updatedHistory = [...(project.progressHistory || []), newProgressEntry];
-
-          // 🎯 NOVO CÁLCULO DE PROGRESSO TOTAL
-          // Calcula a média de todos os progressos individuais
-          const allProgressValues = updatedHistory.map(entry => entry.progress);
-          const totalProgress = allProgressValues.length > 0 
-            ? Math.round(allProgressValues.reduce((sum, progress) => sum + progress, 0) / allProgressValues.length)
-            : 0;
-
-          console.log(`📊 Progresso total recalculado: ${totalProgress}% (baseado em ${allProgressValues.length} imagens)`);
-
-          return {
-            ...project,
-            progress: totalProgress, // Agora baseado na média dos progressos individuais
-            progressHistory: updatedHistory,
-          };
+  const addProgressEntry = async (projetoID: number, formData: FormData): Promise<{ success: boolean; porcentagem?: number; error?: string }> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await apiService.uploadProgressImage(projetoID, formData);
+      if (result.success) {
+        // Atualizar o projeto local com a nova imagem de progresso
+        const updatedProject = await getProject(projetoID);
+        if (updatedProject) {
+          setProjects(prev =>
+            prev.map(project =>
+              project.projetoID === projetoID ? updatedProject : project
+            )
+          );
         }
-        return project;
-      })
-    );
+        return { 
+          success: true, 
+          porcentagem: result.data?.porcentagem 
+        };
+      } else {
+        const errorMsg = result.error || 'Erro ao adicionar progresso';
+        setError(errorMsg);
+        return { success: false, error: errorMsg };
+      }
+    } catch (err) {
+      const errorMsg = 'Erro de conexão';
+      setError(errorMsg);
+      return { success: false, error: errorMsg };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const refreshProjects = () => {
+    // Implementar quando houver endpoint para listar projetos
+    // Por enquanto, mantém a lista existente
+    console.log('refreshProjects: Funcionalidade a ser implementada');
   };
 
   return (
-    <ProjectContext.Provider value={{ projects, addProject, updateProject, deleteProject, addProgressEntry }}>
+    <ProjectContext.Provider value={{ 
+      projects, 
+      isLoading, 
+      error, 
+      addProject, 
+      updateProject, 
+      deleteProject, 
+      getProject,
+      addProgressEntry,
+      refreshProjects 
+    }}>
       {children}
     </ProjectContext.Provider>
   );

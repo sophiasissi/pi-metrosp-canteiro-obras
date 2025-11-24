@@ -1,16 +1,16 @@
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  useWindowDimensions,
-  View
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    useWindowDimensions,
+    View
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { cleanCPF, formatCPF, validateCPF } from "../../utils/cpfValidator";
@@ -28,7 +28,6 @@ export default function ForgotPasswordScreen() {
   const [currentPasswordError, setCurrentPasswordError] = useState("");
   const [newPasswordError, setNewPasswordError] = useState("");
 
-
   const handleCpfChange = (text: string) => {
     // Usa o formatador do utilitário
     const formattedCpf = formatCPF(text);
@@ -36,26 +35,12 @@ export default function ForgotPasswordScreen() {
     
     if (cleanedCpf.length <= 11) {
       setCpf(formattedCpf);
-      
-      // Valida o CPF em tempo real quando tiver 11 dígitos
-      if (cleanedCpf.length === 11) {
-        const cpfValidation = validateCPF(formattedCpf);
-        if (!cpfValidation.isValid) {
-          setCpfError(cpfValidation.message || "CPF inválido");
-        } else {
-          setCpfError("");
-        }
-      } else {
-        // Limpa erro se ainda está digitando
-        if (cpfError) setCpfError("");
-      }
+      if (cpfError) setCpfError("");
     }
   };
 
-
   const validateFields = () => {
     let isValid = true;
-
 
     if (!cpf.trim()) {
       setCpfError("CPF é obrigatório");
@@ -103,11 +88,9 @@ export default function ForgotPasswordScreen() {
       return;
     }
 
-
     setCpf("");
     setCurrentPassword("");
     setNewPassword("");
-
 
     router.replace("/(auth)/login");
   };
@@ -143,7 +126,6 @@ export default function ForgotPasswordScreen() {
               Redefinir Senha
             </Text>
 
-            {}
             <View style={styles.fieldContainer}>
               <Text style={styles.label}>CPF:</Text>
               <TextInput
@@ -155,9 +137,9 @@ export default function ForgotPasswordScreen() {
                 placeholder="Digite seu CPF"
                 placeholderTextColor="#B0B0B0"
                 keyboardType="numeric"
+                autoCapitalize="none"
                 value={cpf}
                 onChangeText={handleCpfChange}
-                maxLength={14} // XXX.XXX.XXX-XX
               />
               {cpfError ? <Text style={styles.errorText}>{cpfError}</Text> : null}
             </View>

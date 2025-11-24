@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { View, Image, StyleSheet, StatusBar, Platform, Dimensions } from "react-native";
-import * as SplashScreen from "expo-splash-screen";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import React, { useEffect, useState } from "react";
+import { Dimensions, Image, Platform, StatusBar, StyleSheet, View } from "react-native";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -41,7 +41,7 @@ export default function CustomSplash() {
     };
 
     showSplash();
-  }, []);
+  }, [router]);
 
 
   if (isSplashVisible && (Platform.OS === "web" || Dimensions.get("window").width >= 768)) {

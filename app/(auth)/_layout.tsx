@@ -1,6 +1,5 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'react-native';
-import HeaderWithLogo from '../../components/header-with-logo';
 
 export default function AuthLayout() {
   return (

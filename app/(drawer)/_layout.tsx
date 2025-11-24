@@ -3,22 +3,24 @@ import { router } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 import React, { useState } from "react";
 import {
-  Dimensions,
-  Modal,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    Dimensions,
+    Modal,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import HeaderWithLogo from "../../components/header-with-logo";
+import { useAuth } from "../../contexts/AuthContext";
 
 function CustomDrawerContent(props: any) {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const { width } = Dimensions.get("window");
   const isSmallScreen = width < 400;
+  const { isAdmin, logout } = useAuth();
 
   const handleLogout = () => {
     setShowLogoutModal(true);
@@ -27,6 +29,9 @@ function CustomDrawerContent(props: any) {
   const handleConfirmLogout = () => {
     setShowLogoutModal(false);
     if (props.navigation?.closeDrawer) props.navigation.closeDrawer();
+    
+    // Chama o logout do contexto de autenticação
+    logout();
     
     setTimeout(() => {
       router.replace("/(auth)/login");
@@ -58,15 +63,18 @@ function CustomDrawerContent(props: any) {
           labelStyle={styles.drawerLabel}
           activeTintColor="#001489"
         />
-        <DrawerItem
-          label="Adicionar Usuário"
-          onPress={() => router.push("/(drawer)/signUp")}
-          icon={({ color, size }) => (
-            <Icon name="person-add" size={size} color={color} />
-          )}
-          labelStyle={styles.drawerLabel}
-          activeTintColor="#001489"
-        />
+        {/* Só mostra "Adicionar Usuário" se for administrador */}
+        {isAdmin && (
+          <DrawerItem
+            label="Adicionar Usuário"
+            onPress={() => router.push("/(drawer)/signUp")}
+            icon={({ color, size }) => (
+              <Icon name="person-add" size={size} color={color} />
+            )}
+            labelStyle={styles.drawerLabel}
+            activeTintColor="#001489"
+          />
+        )}
       </DrawerContentScrollView>
 
       <View style={styles.logoutContainer}>

@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   Animated,
   Image,
   KeyboardAvoidingView,
@@ -15,24 +16,47 @@ import {
   View
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
+import { useAuth } from "../../contexts/AuthContext";
 import { useUsers } from "../../contexts/UsersContext";
+import { apiService } from "../../services/apiService";
 import { cleanCPF, formatCPF, validateCPF } from "../../utils/cpfValidator";
 
 export default function SignUpScreen() {
   const { width } = useWindowDimensions();
   const isLargeScreen = width > 600;
-  const { addUser, updateUser } = useUsers();
+  const { loggedUser, isAdmin } = useAuth();
+  const { updateUser } = useUsers();
   const params = useLocalSearchParams();
 
   // Verifica se está em modo de edição
   const isEditMode = params.editMode === "true";
+  
+  // Verifica se é um usuário comum editando seus próprios dados
+  const isCurrentUserEditing = isEditMode && params.userId === "current";
+  
+  // Proteção: só permite acesso se for admin ou se for usuário comum editando seus próprios dados
+  useEffect(() => {
+    if (!loggedUser) {
+      router.replace("/(auth)/login");
+      return;
+    }
+
+    if (!isAdmin && !isCurrentUserEditing) {
+      Alert.alert(
+        "Acesso Negado", 
+        "Você não tem permissão para acessar esta tela.",
+        [{ text: "OK", onPress: () => router.back() }]
+      );
+      return;
+    }
+  }, [loggedUser, isAdmin, isCurrentUserEditing]);
   
   const [nome, setNome] = useState("");
   const [cpf, setCpf] = useState("");
   const [senha, setSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
   const [grupo, setGrupo] = useState("");
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isUserAdmin, setIsUserAdmin] = useState(false);
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
   const [nomeError, setNomeError] = useState("");
@@ -40,31 +64,96 @@ export default function SignUpScreen() {
   const [senhaError, setSenhaError] = useState("");
   const [confirmarSenhaError, setConfirmarSenhaError] = useState("");
   const [grupoError, setGrupoError] = useState("");
-  const [selectedGroup, setSelectedGroup] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
   const [scaleAnim] = useState(new Animated.Value(0.8));
 
+  // Estados para armazenar valores originais (para detectar mudanças)
+  const [originalValues, setOriginalValues] = useState({
+    nome: "",
+    cpf: "",
+    senha: "",
+    confirmarSenha: "",
+    grupo: "",
+    isAdmin: false,
+  });
+
   // Preenche os campos quando estiver em modo de edição
   useEffect(() => {
-    if (isEditMode && params.userName) {
-      setNome(params.userName as string);
-      setCpf(params.userCpf as string);
-      setGrupo(params.userGroup as string);
-      setIsAdmin(params.userIsAdmin === "true");
+    if (isEditMode) {
+      if (isCurrentUserEditing && loggedUser) {
+        // Editando usuário atual
+        const initialValues = {
+          nome: loggedUser.nomeCompleto,
+          cpf: loggedUser.cpf,
+          senha: "",
+          confirmarSenha: "",
+          grupo: "", // Precisará buscar do backend
+          isAdmin: loggedUser.adm,
+        };
+
+        setNome(initialValues.nome);
+        setCpf(initialValues.cpf);
+        setGrupo(initialValues.grupo);
+        setIsUserAdmin(initialValues.isAdmin);
+        setOriginalValues(initialValues);
+      } else if (params.userName) {
+        // Editando outro usuário (só admin pode fazer isso)
+        const initialValues = {
+          nome: params.userName as string,
+          cpf: params.userCpf as string,
+          senha: "",
+          confirmarSenha: "",
+          grupo: params.userGroup as string,
+          isAdmin: params.userIsAdmin === "true",
+        };
+
+        setNome(initialValues.nome);
+        setCpf(initialValues.cpf);
+        setGrupo(initialValues.grupo);
+        setIsUserAdmin(initialValues.isAdmin);
+        setOriginalValues(initialValues);
+      }
     }
-  }, [isEditMode, params]);
+  }, [isEditMode, params, loggedUser, isCurrentUserEditing]);
+
+  // Função para verificar se houve mudanças nos dados
+  const hasDataChanged = () => {
+    if (!isEditMode) return true; // Em modo de criação, sempre permitir
+
+    if (isCurrentUserEditing) {
+      // Para usuário editando seus próprios dados, verifica apenas campos básicos
+      return nome !== originalValues.nome || grupo !== originalValues.grupo;
+    } else {
+      // Para admin editando outros usuários, verifica todos os campos editáveis
+      const hasFieldChanges = (
+        nome !== originalValues.nome ||
+        grupo !== originalValues.grupo ||
+        isUserAdmin !== originalValues.isAdmin
+      );
+      
+      return hasFieldChanges;
+    }
+  };
+
+  // Função para obter o título da tela
+  const getScreenTitle = () => {
+    if (isEditMode) {
+      return isCurrentUserEditing ? "Editar Meus Dados" : "Editar Usuário";
+    }
+    return "Adicionar Usuário";
+  };
+
+  // Função para cancelar e voltar
+  const handleCancel = () => {
+    router.back();
+  };
 
   const validateNome = (nome: string) => {
     // Permite apenas letras (incluindo acentos) e espaços
     const nomeRegex = /^[A-Za-zÀ-ÿ\s]+$/;
     return nomeRegex.test(nome);
-  };
-
-  const validateCpfInput = (cpf: string) => {
-    // Para validação durante digitação - permite apenas números
-    const cpfNumbers = cpf.replace(/\D/g, '');
-    return cpfNumbers.length <= 11 && /^\d*$/.test(cpfNumbers);
   };
 
   const validateGrupo = (grupo: string) => {
@@ -114,91 +203,60 @@ export default function SignUpScreen() {
 
   const handleSenhaChange = (text: string) => {
     setSenha(text);
-    if (text.trim() === "") {
-      setSenhaError("");
-    } else if (text.length < 6) {
-      setSenhaError("Senha deve ter pelo menos 6 caracteres");
-    } else {
-      setSenhaError("");
-    }
-
-    if (confirmarSenha.trim() !== "") {
-      if (text !== confirmarSenha) {
-        setConfirmarSenhaError("Senhas não coincidem");
-      } else {
-        setConfirmarSenhaError("");
-      }
-    }
+    if (senhaError) setSenhaError("");
   };
 
   const handleConfirmarSenhaChange = (text: string) => {
     setConfirmarSenha(text);
-    if (text.trim() === "") {
-      setConfirmarSenhaError("");
-    } else if (senha !== text) {
-      setConfirmarSenhaError("Senhas não coincidem");
-    } else {
-      setConfirmarSenhaError("");
-    }
+    if (confirmarSenhaError) setConfirmarSenhaError("");
   };
 
   const validateFields = () => {
     let isValid = true;
 
-    if (!nome.trim()) {
-      setNomeError("Nome é obrigatório");
-      isValid = false;
-    } else if (nome.trim().length < 2) {
-      setNomeError("Nome deve ter pelo menos 2 caracteres");
-      isValid = false;
-    } else if (!validateNome(nome)) {
-      setNomeError("Nome deve conter apenas letras");
-      isValid = false;
-    } else {
-      setNomeError("");
-    }
-
-    if (!cpf.trim()) {
-      setCpfError("CPF é obrigatório");
-      isValid = false;
-    } else {
-      const cpfValidation = validateCPF(cpf);
-      if (!cpfValidation.isValid) {
-        setCpfError(cpfValidation.message || "CPF inválido");
+    // Valida nome apenas se não for usuário comum editando seus próprios dados
+    if (!isCurrentUserEditing) {
+      if (!nome.trim()) {
+        setNomeError("Nome é obrigatório");
+        isValid = false;
+      } else if (nome.trim().length < 2) {
+        setNomeError("Nome deve ter pelo menos 2 caracteres");
+        isValid = false;
+      } else if (!validateNome(nome)) {
+        setNomeError("Nome deve conter apenas letras");
         isValid = false;
       } else {
-        setCpfError("");
+        setNomeError("");
       }
     }
 
-    if (!senha.trim()) {
-      setSenhaError("Senha é obrigatória");
-      isValid = false;
-    } else if (senha.length < 6) {
-      setSenhaError("Senha deve ter pelo menos 6 caracteres");
-      isValid = false;
-    } else {
-      setSenhaError("");
+    // Só valida CPF se não estiver editando
+    if (!isEditMode) {
+      if (!cpf.trim()) {
+        setCpfError("CPF é obrigatório");
+        isValid = false;
+      } else {
+        const cpfValidation = validateCPF(cpf);
+        if (!cpfValidation.isValid) {
+          setCpfError(cpfValidation.message || "CPF inválido");
+          isValid = false;
+        } else {
+          setCpfError("");
+        }
+      }
     }
 
-    if (!confirmarSenha.trim()) {
-      setConfirmarSenhaError("Confirmação de senha é obrigatória");
-      isValid = false;
-    } else if (senha !== confirmarSenha) {
-      setConfirmarSenhaError("Senhas não coincidem");
-      isValid = false;
-    } else {
-      setConfirmarSenhaError("");
-    }
-
-    if (!grupo.trim()) {
-      setGrupoError("Grupo é obrigatório");
-      isValid = false;
-    } else if (!validateGrupo(grupo)) {
-      setGrupoError("Grupo deve conter apenas letras minúsculas (sem espaços)");
-      isValid = false;
-    } else {
-      setGrupoError("");
+    // Valida grupo apenas se não for usuário comum editando seus próprios dados
+    if (!isCurrentUserEditing) {
+      if (!grupo.trim()) {
+        setGrupoError("Grupo é obrigatório");
+        isValid = false;
+      } else if (!validateGrupo(grupo)) {
+        setGrupoError("Grupo deve conter apenas letras minúsculas (sem espaços)");
+        isValid = false;
+      } else {
+        setGrupoError("");
+      }
     }
 
     return isValid;
@@ -224,15 +282,10 @@ export default function SignUpScreen() {
   const clearForm = () => {
     setNome("");
     setCpf("");
-    setSenha("");
-    setConfirmarSenha("");
     setGrupo("");
-    setSelectedGroup("");
-    setIsAdmin(false);
+    setIsUserAdmin(false);
     setNomeError("");
     setCpfError("");
-    setSenhaError("");
-    setConfirmarSenhaError("");
     setGrupoError("");
   };
 
@@ -260,32 +313,50 @@ export default function SignUpScreen() {
     });
   };
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     if (!validateFields()) {
       return;
     }
 
-    const userData = {
-      name: nome.trim(),
-      cpf: cpf, // CPF já formatado
-      group: grupo.trim(),
-      isAdmin: isAdmin,
-    };
+    setIsLoading(true);
 
-    if (isEditMode) {
-      // Atualiza usuário existente
-      const userId = parseInt(params.userId as string);
-      updateUser(userId, userData);
-    } else {
-      // Cria novo usuário
-      addUser(userData);
+    try {
+      if (isEditMode) {
+        // Para modo de edição usando API de update
+        const userData = {
+          nomeCompleto: nome.trim(),
+          nomeGrupo: grupo.trim(),
+          adm: isUserAdmin,
+        };
+        await updateUser(cleanCPF(cpf), userData);
+        showSuccessModalWithAnimation();
+      } else {
+        // Registrar novo usuário via API
+        const result = await apiService.register({
+          nomeCompleto: nome.trim(),
+          cpf: cleanCPF(cpf),
+          senha: senha,
+          confirmarSenha: confirmarSenha,
+          nomeGrupo: grupo.trim(),
+          adm: isUserAdmin
+        });
+
+        if (result.success) {
+          showSuccessModalWithAnimation();
+        } else {
+          Alert.alert("Erro", result.error || "Erro ao cadastrar usuário");
+        }
+      }
+    } catch (err) {
+      Alert.alert("Erro", "Erro de conexão com o servidor");
+      console.error("Erro no cadastro:", err);
+    } finally {
+      setIsLoading(false);
     }
-    
-    showSuccessModalWithAnimation();
   };
 
   const SuccessModal = () => {
-    const userType = isAdmin ? "Administrador" : "Usuário";
+    const userType = isUserAdmin ? "Administrador" : "Usuário";
 
     return (
       <Modal
@@ -367,7 +438,7 @@ export default function SignUpScreen() {
               style={[styles.logo, isLargeScreen && styles.logoLarge]}
             />
 
-            <Text style={styles.title}>{isEditMode ? "Editar Dados" : "Criar Conta"}</Text>
+            <Text style={styles.title}>{getScreenTitle()}</Text>
 
             <View style={styles.fieldContainer}>
               <Text style={styles.label}>Nome Completo:</Text>
@@ -376,11 +447,13 @@ export default function SignUpScreen() {
                   styles.input,
                   isLargeScreen && styles.inputLarge,
                   nomeError ? styles.inputError : null,
+                  isCurrentUserEditing && styles.inputDisabled,
                 ]}
                 placeholder="Digite seu nome completo"
                 placeholderTextColor="#B0B0B0"
                 value={nome}
-                onChangeText={handleNomeChange}
+                onChangeText={isCurrentUserEditing ? undefined : handleNomeChange}
+                editable={!isCurrentUserEditing}
               />
               {nomeError ? <Text style={styles.errorText}>{nomeError}</Text> : null}
             </View>
@@ -472,40 +545,78 @@ export default function SignUpScreen() {
                   styles.input,
                   isLargeScreen && styles.inputLarge,
                   grupoError ? styles.inputError : null,
+                  isCurrentUserEditing && styles.inputDisabled,
                 ]}
                 placeholder="Digite o nome do grupo"
                 placeholderTextColor="#B0B0B0"
                 autoCapitalize="none"
                 value={grupo}
-                onChangeText={handleGrupoChange}
+                onChangeText={isCurrentUserEditing ? undefined : handleGrupoChange}
+                editable={!isCurrentUserEditing}
               />
               {grupoError ? <Text style={styles.errorText}>{grupoError}</Text> : null}
             </View>
 
-            <View style={styles.checkboxContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.checkbox,
-                  isAdmin && { backgroundColor: "#001489" }
-                ]}
-                onPress={() => setIsAdmin(!isAdmin)}
-              >
-                {isAdmin && (
-                  <Icon
-                    name="check"
-                    size={14}
-                    color="#fff"
-                  />
-                )}
-              </TouchableOpacity>
-              <Text style={styles.checkboxLabel}>
-                Administrador
-              </Text>
-            </View>
+            {/* Checkbox de Administrador - só aparece para novos cadastros ou quando admin está editando */}
+            {!isCurrentUserEditing && (
+              <View style={styles.checkboxContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.checkbox,
+                    isUserAdmin && { backgroundColor: "#001489" }
+                  ]}
+                  onPress={() => setIsUserAdmin(!isUserAdmin)}
+                >
+                  {isUserAdmin && (
+                    <Icon
+                      name="check"
+                      size={14}
+                      color="#fff"
+                    />
+                  )}
+                </TouchableOpacity>
+                <Text style={styles.checkboxLabel}>
+                  Administrador
+                </Text>
+              </View>
+            )}
 
-            <TouchableOpacity style={styles.signUpButton} onPress={handleSignUp}>
-              <Text style={styles.signUpButtonText}>{isEditMode ? "ATUALIZAR" : "CADASTRAR"}</Text>
-            </TouchableOpacity>
+            {/* Botões de ação */}
+            {isEditMode ? (
+              // Modo de edição - dois botões
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity 
+                  style={[
+                    styles.signUpButton,
+                    !hasDataChanged() && styles.buttonDisabled
+                  ]} 
+                  onPress={handleSignUp}
+                  disabled={!hasDataChanged()}
+                >
+                  <Text style={[
+                    styles.signUpButtonText,
+                    !hasDataChanged() && styles.buttonTextDisabled
+                  ]}>
+                    ATUALIZAR
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+                  <Text style={styles.cancelButtonText}>CANCELAR</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              // Modo de criação - botão único
+              <TouchableOpacity 
+                style={[styles.signUpButton, isLoading && styles.buttonDisabled]} 
+                onPress={handleSignUp}
+                disabled={isLoading}
+              >
+                <Text style={styles.signUpButtonText}>
+                  {isLoading ? "CADASTRANDO..." : "CADASTRAR"}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -729,5 +840,39 @@ const styles = StyleSheet.create({
   inputDisabled: {
     backgroundColor: "#f5f5f5",
     color: "#999",
+  },
+  
+  // Novos estilos para os botões
+  buttonContainer: {
+    width: "100%",
+    marginTop: 10,
+    alignItems: "center",
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  buttonTextDisabled: {
+    opacity: 0.5,
+  },
+  cancelButton: {
+    backgroundColor: "transparent",
+    borderWidth: 2,
+    borderColor: "#001489",
+    width: "80%",
+    height: 50,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  cancelButtonText: {
+    color: "#001489",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });

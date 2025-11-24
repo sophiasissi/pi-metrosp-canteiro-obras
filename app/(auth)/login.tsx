@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -11,13 +12,16 @@ import {
   TouchableOpacity,
   View,
   useWindowDimensions,
+  ActivityIndicator,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
+import { useAuth } from "../../contexts/AuthContext";
 import { cleanCPF, formatCPF, validateCPF } from "../../utils/cpfValidator";
 
 export default function LoginScreen() {
   const { width } = useWindowDimensions();
   const isLargeScreen = width > 600;
+  const { login, isLoading } = useAuth();
 
   const [cpf, setCpf] = useState("");
   const [senha, setSenha] = useState("");
@@ -32,19 +36,7 @@ export default function LoginScreen() {
     
     if (cleanedCpf.length <= 11) {
       setCpf(formattedCpf);
-      
-      // Valida o CPF em tempo real quando tiver 11 dígitos
-      if (cleanedCpf.length === 11) {
-        const cpfValidation = validateCPF(formattedCpf);
-        if (!cpfValidation.isValid) {
-          setCpfError(cpfValidation.message || "CPF inválido");
-        } else {
-          setCpfError("");
-        }
-      } else {
-        // Limpa erro se ainda está digitando
-        if (cpfError) setCpfError("");
-      }
+      if (cpfError) setCpfError("");
     }
   };
 
@@ -77,11 +69,22 @@ export default function LoginScreen() {
     return isValid;
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!validateFields()) {
       return;
     }
-    router.push("/(drawer)/home");
+
+    // Chama a API do backend
+    const result = await login({
+      cpf: cleanCPF(cpf),
+      senha: senha
+    });
+
+    if (result.success) {
+      router.push("/(drawer)/home");
+    } else {
+      Alert.alert("Erro", result.error || "CPF ou senha inválidos");
+    }
   };
 
   return (
@@ -122,9 +125,9 @@ export default function LoginScreen() {
             placeholder="Digite seu CPF"
             placeholderTextColor="#B0B0B0"
             keyboardType="numeric"
+            autoCapitalize="none"
             value={cpf}
             onChangeText={handleCpfChange}
-            maxLength={14} // XXX.XXX.XXX-XX
           />
           {cpfError ? <Text style={styles.errorText}>{cpfError}</Text> : null}
         </View>
@@ -165,8 +168,16 @@ export default function LoginScreen() {
             Esqueceu a senha?
           </Text>
         </View>
-          <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-            <Text style={styles.loginButtonText}>ENTRAR</Text>
+          <TouchableOpacity 
+            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]} 
+            onPress={handleLogin}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.loginButtonText}>ENTRAR</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -280,6 +291,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+  },
+  loginButtonDisabled: {
+    backgroundColor: "#999999",
+    opacity: 0.7,
   },
   loginButtonText: {
     color: "#fff",
