@@ -81,18 +81,12 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
 
           const updatedHistory = [...(project.progressHistory || []), newProgressEntry];
 
-          // 🎯 NOVO CÁLCULO DE PROGRESSO TOTAL
-          // Calcula a média de todos os progressos individuais
-          const allProgressValues = updatedHistory.map(entry => entry.progress);
-          const totalProgress = allProgressValues.length > 0 
-            ? Math.round(allProgressValues.reduce((sum, progress) => sum + progress, 0) / allProgressValues.length)
-            : 0;
-
-          console.log(`📊 Progresso total recalculado: ${totalProgress}% (baseado em ${allProgressValues.length} imagens)`);
-
+          // TODO: Integração com CNN do backend
+          // O progresso agora virá da análise da CNN que compara a imagem atual com a planta baixa
+          // Futuramente: progress = analysisResult.progressPercentage (resultado da CNN)
           return {
             ...project,
-            progress: totalProgress, // Agora baseado na média dos progressos individuais
+            progress: progressData.progress, // Temporário até integração com CNN
             progressHistory: updatedHistory,
           };
         }

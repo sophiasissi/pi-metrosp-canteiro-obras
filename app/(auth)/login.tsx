@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -13,17 +14,39 @@ import {
   useWindowDimensions,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
+import { useAuth } from "../../contexts/AuthContext";
 import { cleanCPF, formatCPF, validateCPF } from "../../utils/cpfValidator";
 
 export default function LoginScreen() {
   const { width } = useWindowDimensions();
   const isLargeScreen = width > 600;
+  const { setLoggedUser } = useAuth();
 
   const [cpf, setCpf] = useState("");
   const [senha, setSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [cpfError, setCpfError] = useState("");
   const [senhaError, setSenhaError] = useState("");
+
+  // Simulação de usuários pré-cadastrados (em produção viria do backend)
+  const usuariosPrecadastrados = [
+    {
+      id: 1,
+      cpf: "123.456.789-00",
+      senha: "admin123",
+      name: "Administrador Metrô",
+      group: "Administração",
+      isAdmin: true
+    },
+    {
+      id: 2,
+      cpf: "987.654.321-00", 
+      senha: "user123",
+      name: "Usuário Comum",
+      group: "Operação",
+      isAdmin: false
+    }
+  ];
 
   const handleCpfChange = (text: string) => {
     // Usa o formatador do utilitário
@@ -32,19 +55,7 @@ export default function LoginScreen() {
     
     if (cleanedCpf.length <= 11) {
       setCpf(formattedCpf);
-      
-      // Valida o CPF em tempo real quando tiver 11 dígitos
-      if (cleanedCpf.length === 11) {
-        const cpfValidation = validateCPF(formattedCpf);
-        if (!cpfValidation.isValid) {
-          setCpfError(cpfValidation.message || "CPF inválido");
-        } else {
-          setCpfError("");
-        }
-      } else {
-        // Limpa erro se ainda está digitando
-        if (cpfError) setCpfError("");
-      }
+      if (cpfError) setCpfError("");
     }
   };
 
@@ -81,7 +92,20 @@ export default function LoginScreen() {
     if (!validateFields()) {
       return;
     }
-    router.push("/(drawer)/home");
+
+    // Simula chamada para o backend
+    const usuario = usuariosPrecadastrados.find(
+      u => u.cpf === cpf && u.senha === senha
+    );
+
+    if (usuario) {
+      // Simula resposta do backend (sem a senha)
+      const { senha: _, ...dadosUsuario } = usuario;
+      setLoggedUser(dadosUsuario);
+      router.push("/(drawer)/home");
+    } else {
+      Alert.alert("Erro", "CPF ou senha inválidos");
+    }
   };
 
   return (
@@ -122,9 +146,9 @@ export default function LoginScreen() {
             placeholder="Digite seu CPF"
             placeholderTextColor="#B0B0B0"
             keyboardType="numeric"
+            autoCapitalize="none"
             value={cpf}
             onChangeText={handleCpfChange}
-            maxLength={14} // XXX.XXX.XXX-XX
           />
           {cpfError ? <Text style={styles.errorText}>{cpfError}</Text> : null}
         </View>

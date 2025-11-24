@@ -17,13 +17,11 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useProjects } from "../../contexts/ProjectContext";
-import { useUsers } from "../../contexts/UsersContext";
 
 export default function AddProjectScreen() {
   const { width } = useWindowDimensions();
   const isLargeScreen = width > 600;
   const { addProject } = useProjects();
-  const { getAvailableGroups } = useUsers();
 
   const [projectName, setProjectName] = useState("");
   const [location, setLocation] = useState("");
@@ -33,9 +31,6 @@ export default function AddProjectScreen() {
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [currentDateType, setCurrentDateType] = useState<'start' | 'end' | null>(null);
   const [group, setGroup] = useState("");
-  const [showGroupPicker, setShowGroupPicker] = useState(false);
-  const [showGroupDropdown, setShowGroupDropdown] = useState(false);
-  const [showNoGroupsModal, setShowNoGroupsModal] = useState(false);
   const [projectImage, setProjectImage] = useState<string | null>(null);
 
   const [projectNameError, setProjectNameError] = useState("");
@@ -88,7 +83,7 @@ export default function AddProjectScreen() {
       for (let day = 1; day <= daysInMonth; day++) {
         const date = new Date(currentYear, currentMonth, day);
         const isToday = date.toDateString() === today.toDateString();
-        const isPast = date < today && !isToday; // Permite o dia atual
+        const isPast = date < today;
         const isSelected = (startDate && date.toDateString() === startDate.toDateString()) ||
                           (endDate && date.toDateString() === endDate.toDateString());
         const isDisabled = isPast || (isEndDate && startDate && date <= startDate);
@@ -187,10 +182,9 @@ export default function AddProjectScreen() {
   const handleDateSelect = (selectedDate: Date) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    selectedDate.setHours(0, 0, 0, 0);
 
     if (selectedDate < today) {
-      Alert.alert('Data Inválida', 'Selecione a data de hoje ou uma data futura.');
+      Alert.alert('Data Inválida', 'Selecione uma data futura.');
       return;
     }
 
@@ -232,30 +226,6 @@ export default function AddProjectScreen() {
     setShowEndDatePicker(true);
   };
 
-  const openGroupPicker = () => {
-    const availableGroups = getAvailableGroups();
-    if (availableGroups.length === 0) {
-      setShowNoGroupsModal(true);
-    } else {
-      setShowGroupDropdown(!showGroupDropdown);
-    }
-  };
-
-  const selectGroup = (selectedGroup: string) => {
-    setGroup(selectedGroup);
-    setShowGroupDropdown(false);
-    if (groupError) setGroupError("");
-  };
-
-  const navigateToSignUp = () => {
-    setShowNoGroupsModal(false);
-    router.push("/(drawer)/signUp");
-  };
-
-  const closeDropdown = () => {
-    setShowGroupDropdown(false);
-  };
-
   const validateFields = () => {
     let isValid = true;
 
@@ -288,8 +258,8 @@ export default function AddProjectScreen() {
       if (endDate <= startDate) {
         setPeriodError("A data de fim deve ser posterior à data de início");
         isValid = false;
-      } else if (endDate < today) {
-        setPeriodError("A data de fim deve ser a data de hoje ou uma data futura");
+      } else if (endDate <= today) {
+        setPeriodError("A data de fim deve ser uma data futura");
         isValid = false;
       } else {
         setPeriodError("");
@@ -418,57 +388,11 @@ export default function AddProjectScreen() {
   };
 
   const handleCreateProject = async () => {
-  console.log("🚀 handleCreateProject iniciada");
-  
   if (!validateFields()) {
-    console.log("❌ Validação falhou");
     return;
   }
 
-  console.log("✅ Validação passou");
-
   try {
-    // SIMULAÇÃO - COMENTADO O CÓDIGO DA API POR ENQUANTO
-    console.log("🎯 Simulando criação do projeto...");
-    
-    // Dados que seriam enviados para a API
-    const projectData = {
-      group,
-      name: projectName,
-      location,
-      startDate: startDate ? startDate.toISOString().split("T")[0] : null,
-      endDate: endDate ? endDate.toISOString().split("T")[0] : null,
-      hasImage: !!projectImage
-    };
-
-    console.log("� Dados do projeto (simulado):", projectData);
-
-    // Simular delay da API (1 segundo)
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Adicionar o projeto ao contexto local
-    const contextProjectData = {
-      name: projectName,
-      location,
-      period: `${startDate?.toLocaleDateString('pt-BR')} - ${endDate?.toLocaleDateString('pt-BR')}`,
-      group,
-      image: projectImage || undefined,
-      progress: 0, // Projeto novo começa com 0% de progresso
-      progressHistory: []
-    };
-    
-    addProject(contextProjectData);
-    console.log("📝 Projeto adicionado ao contexto:", contextProjectData);
-
-    // Simular sucesso
-    console.log("✅ Projeto criado com sucesso (simulado)");
-    Alert.alert("Sucesso!", "Projeto criado com sucesso!");
-    router.replace("/(drawer)/home");
-
-    /* 
-    === CÓDIGO REAL DA API (DESCOMENTE QUANDO BACKEND ESTIVER PRONTO) ===
-    
-    console.log("�📸 Processando imagem...", { projectImage });
     const base64Image = projectImage
       ? await fetch(projectImage)
           .then((res) => res.blob())
@@ -491,21 +415,13 @@ export default function AddProjectScreen() {
       image: base64Image,
     };
 
-    console.log("📦 Dados para enviar:", {
-      ...body,
-      image: base64Image ? "Imagem processada" : "Sem imagem"
-    });
-
-    const response = await fetch("http://localhost:5000/api/projetos", {
+    const response = await fetch("http://localhost:5000/projetos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
 
-    console.log("📡 Resposta do servidor:", response.status);
-
     const result = await response.json();
-    console.log("📋 Resultado:", result);
 
     if (response.ok) {
       Alert.alert("Sucesso!", result.message);
@@ -513,13 +429,11 @@ export default function AddProjectScreen() {
     } else {
       Alert.alert("Erro", result.error || "Não foi possível criar o projeto.");
     }
-    */
   } catch (error) {
-    console.error("❌ Erro completo:", error);
-    Alert.alert("Erro", "Erro inesperado na criação do projeto.");
+    console.error(error);
+    Alert.alert("Erro", "Falha ao conectar com o servidor Flask.");
   }
 };
-
 
 
   return (
@@ -731,112 +645,22 @@ export default function AddProjectScreen() {
             </View>
 
             {}
-            <View style={[styles.fieldContainer, styles.groupFieldContainer]}>
+            <View style={styles.fieldContainer}>
               <Text style={styles.label}>Grupo:</Text>
-              <View style={styles.dropdownContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.input,
-                    styles.dateButton,
-                    isLargeScreen && styles.inputLarge,
-                    groupError ? styles.inputError : null,
-                    showGroupDropdown && styles.dropdownActive,
-                  ]}
-                  onPress={openGroupPicker}
-                >
-                  <Text style={[
-                    styles.dateText,
-                    !group && styles.placeholderText
-                  ]}>
-                    {group || "Selecione um grupo"}
-                  </Text>
-                  <Icon 
-                    name={showGroupDropdown ? "chevron-up" : "chevron-down"} 
-                    size={16} 
-                    color="#666" 
-                  />
-                </TouchableOpacity>
-
-                {}
-                {showGroupDropdown && (
-                  <View style={styles.dropdownList}>
-                    <ScrollView 
-                      style={styles.dropdownScrollView}
-                      nestedScrollEnabled={true}
-                      showsVerticalScrollIndicator={false}
-                    >
-                      {getAvailableGroups().map((groupName, index) => (
-                        <TouchableOpacity
-                          key={groupName}
-                          style={[
-                            styles.dropdownOption,
-                            index === 0 && styles.dropdownOptionFirst,
-                            index === getAvailableGroups().length - 1 && styles.dropdownOptionLast,
-                            group === groupName && styles.dropdownOptionSelected,
-                          ]}
-                          onPress={() => selectGroup(groupName)}
-                        >
-                          <Text style={[
-                            styles.dropdownOptionText,
-                            group === groupName && styles.dropdownOptionTextSelected,
-                          ]}>
-                            {groupName}
-                          </Text>
-                          {group === groupName && (
-                            <Icon name="check" size={14} color="#001489" />
-                          )}
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  </View>
-                )}
-              </View>
-
-              {}
-              <Modal
-                transparent={true}
-                visible={showNoGroupsModal}
-                animationType="fade"
-                statusBarTranslucent={true}
-                onRequestClose={() => setShowNoGroupsModal(false)}
-              >
-                <View style={styles.modalOverlay}>
-                  <View style={styles.noGroupsModalContainer}>
-                    <View style={styles.noGroupsIconContainer}>
-                      <Text style={styles.noGroupsIcon}>👥</Text>
-                    </View>
-                    
-                    <Text style={styles.noGroupsModalTitle}>
-                      Nenhum Grupo Disponível
-                    </Text>
-                    
-                    <Text style={styles.noGroupsModalMessage}>
-                      Para criar um projeto, é necessário ter pelo menos um grupo cadastrado.
-                    </Text>
-                    
-                    <Text style={styles.noGroupsModalSubMessage}>
-                      Cadastre um usuário para criar automaticamente um grupo!
-                    </Text>
-                    
-                    <View style={styles.modalButtonsRow}>
-                      <TouchableOpacity
-                        style={[styles.cancelButton, styles.modalButton]}
-                        onPress={() => setShowNoGroupsModal(false)}
-                      >
-                        <Text style={styles.cancelButtonText}>Cancelar</Text>
-                      </TouchableOpacity>
-                      
-                      <TouchableOpacity
-                        style={[styles.noGroupsConfirmButton, styles.modalButton]}
-                        onPress={navigateToSignUp}
-                      >
-                        <Text style={styles.noGroupsConfirmButtonText}>Cadastrar</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </View>
-              </Modal>
-
+              <TextInput
+                style={[
+                  styles.input,
+                  isLargeScreen && styles.inputLarge,
+                  groupError ? styles.inputError : null,
+                ]}
+                placeholder="Digite o nome do grupo"
+                placeholderTextColor="#B0B0B0"
+                value={group}
+                onChangeText={(text) => {
+                  setGroup(text);
+                  if (groupError) setGroupError("");
+                }}
+              />
               {groupError ? (
                 <Text style={styles.errorText}>{groupError}</Text>
               ) : null}
@@ -873,7 +697,6 @@ const styles = StyleSheet.create({
   formWrapper: {
     width: "100%",
     alignItems: "center",
-    overflow: 'visible',
   },
   formWrapperLarge: {
     width: 450,
@@ -895,11 +718,6 @@ const styles = StyleSheet.create({
   fieldContainer: {
     width: "100%",
     marginBottom: 20,
-    zIndex: 1,
-  },
-  groupFieldContainer: {
-    zIndex: 9998,
-    position: 'relative',
   },
   labelContainer: {
     flexDirection: "row",
@@ -1102,6 +920,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 15,
   },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
   cancelButton: {
     backgroundColor: "#F0F0F0",
     borderWidth: 1,
@@ -1241,184 +1065,6 @@ const styles = StyleSheet.create({
   },
   disabledDayText: {
     color: '#d9e1e8',
-  },
-  dateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  placeholderText: {
-    color: '#B0B0B0',
-  },
-  modalContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 15,
-    padding: 20,
-    width: '90%',
-    maxWidth: 400,
-    maxHeight: '70%',
-  },
-  groupList: {
-    maxHeight: 300,
-    marginVertical: 15,
-  },
-  groupOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
-  },
-  groupOptionText: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
-  },
-  noGroupsText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    fontStyle: 'italic',
-    marginVertical: 20,
-    lineHeight: 22,
-  },
-  noGroupsModalContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    alignItems: 'center',
-    width: '90%',
-    maxWidth: 350,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
-  },
-  noGroupsIconContainer: {
-    marginBottom: 20,
-  },
-  noGroupsIcon: {
-    fontSize: 48,
-    textAlign: 'center',
-  },
-  noGroupsModalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 15,
-    color: '#082A85',
-    textAlign: 'center',
-  },
-  noGroupsModalMessage: {
-    fontSize: 16,
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 10,
-    fontWeight: '600',
-  },
-  noGroupsModalSubMessage: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 25,
-  },
-  modalButtonsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    gap: 15,
-  },
-  modalButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 48,
-  },
-  noGroupsConfirmButton: {
-    backgroundColor: '#001489',
-  },
-  noGroupsConfirmButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  buttonIcon: {
-    marginRight: 4,
-  },
-  dropdownContainer: {
-    position: 'relative',
-    zIndex: 9999,
-  },
-  dropdownActive: {
-    borderColor: '#001489',
-    borderWidth: 2,
-    backgroundColor: '#F8F9FF',
-    zIndex: 10000,
-  },
-  dropdownList: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    marginTop: 5,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 15,
-    zIndex: 10001,
-    maxHeight: 200,
-  },
-  dropdownScrollView: {
-    maxHeight: 180,
-  },
-  dropdownOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-    backgroundColor: '#FFFFFF',
-  },
-  dropdownOptionFirst: {
-    borderTopLeftRadius: 15,
-    borderTopRightRadius: 15,
-  },
-  dropdownOptionLast: {
-    borderBottomLeftRadius: 15,
-    borderBottomRightRadius: 15,
-    borderBottomWidth: 0,
-  },
-  dropdownOptionSelected: {
-    backgroundColor: '#F0F4FF',
-    borderLeftWidth: 3,
-    borderLeftColor: '#001489',
-  },
-  dropdownOptionText: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
-  },
-  dropdownOptionTextSelected: {
-    color: '#001489',
-    fontWeight: '600',
   },
 
 });

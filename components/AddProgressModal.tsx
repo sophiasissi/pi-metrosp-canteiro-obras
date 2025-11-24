@@ -110,32 +110,12 @@ export default function AddProgressModal({ visible, onClose, projectId }: AddPro
       // Simulação do tempo de análise da CNN
       await new Promise(resolve => setTimeout(resolve, 3000));
       
-      // 🎯 SISTEMA DE PROGRESSO COM VALORES FIXOS PREDEFINIDOS
-      const currentProgressHistory = project?.progressHistory || [];
-      const photoCount = currentProgressHistory.length;
-      
-      // Sequência predefinida de progressos: 14%, 33%, 55%, 68%, 96%
-      const predefinedProgress = [15, 30, 55, 70, 95];
-      
-      let newProgress;
-      if (photoCount < predefinedProgress.length) {
-        // Use valor predefinido para as primeiras 5 fotos
-        newProgress = predefinedProgress[photoCount];
-        console.log(`📋 Usando progresso predefinido: Foto ${photoCount + 1} = ${newProgress}%`);
-      } else {
-        // Após a 5ª foto, use sistema aleatório crescente
-        const lastProgress = Math.max(...currentProgressHistory.map(entry => entry.progress));
-        const minIncrease = 1;
-        const maxIncrease = 4;
-        const randomIncrease = Math.floor(Math.random() * (maxIncrease - minIncrease + 1)) + minIncrease;
-        newProgress = Math.min(100, lastProgress + randomIncrease);
-        console.log(`🎲 Progresso aleatório: ${lastProgress}% + ${randomIncrease}% = ${newProgress}%`);
-      }
-
-      console.log(`🔬 Análise simulada: Foto ${photoCount + 1} = ${newProgress}%`);
+      // Por enquanto, mantemos um progresso temporário até a integração com a CNN
+      // Futuramente, será: progress: analysisResult.progressPercentage
+      const temporaryProgress = Math.min(100, ((project?.progressHistory?.length || 0) + 1) * 10);
 
       addProgressEntry(projectId, {
-        progress: newProgress,
+        progress: temporaryProgress,
         image: progressImage,
       });
       
@@ -216,7 +196,7 @@ export default function AddProgressModal({ visible, onClose, projectId }: AddPro
                 <ActivityIndicator size="large" color="#001489" />
                 <Text style={styles.analysisTitle}>Analisando progresso...</Text>
                 <Text style={styles.analysisSubtitle}>
-                  Calculando porcentagem individual da obra
+                  Comparando com a planta baixa
                 </Text>
               </View>
             </View>
