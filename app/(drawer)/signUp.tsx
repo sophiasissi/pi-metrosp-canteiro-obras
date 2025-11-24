@@ -13,12 +13,14 @@ import {
   TextInput,
   TouchableOpacity,
   useWindowDimensions,
-  View
+  View,
+  ActivityIndicator
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUsers } from "../../contexts/UsersContext";
 import { cleanCPF, formatCPF, validateCPF } from "../../utils/cpfValidator";
+import { apiService } from "../../services/apiService";
 
 export default function SignUpScreen() {
   const { width } = useWindowDimensions();
@@ -65,6 +67,7 @@ export default function SignUpScreen() {
   const [grupoError, setGrupoError] = useState("");
   const [selectedGroup, setSelectedGroup] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
   const [scaleAnim] = useState(new Animated.Value(0.8));
 
@@ -84,12 +87,12 @@ export default function SignUpScreen() {
       if (isCurrentUserEditing && loggedUser) {
         // Editando usuário atual
         const initialValues = {
-          nome: loggedUser.name,
+          nome: loggedUser.nomeCompleto,
           cpf: loggedUser.cpf,
           senha: "",
           confirmarSenha: "",
-          grupo: loggedUser.group || "",
-          isAdmin: loggedUser.isAdmin,
+          grupo: "", // Precisará buscar do backend
+          isAdmin: loggedUser.adm,
         };
 
         setNome(initialValues.nome);
@@ -319,28 +322,47 @@ export default function SignUpScreen() {
     });
   };
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     if (!validateFields()) {
       return;
     }
 
-    const userData = {
-      name: nome.trim(),
-      cpf: cpf, // CPF já formatado
-      group: grupo.trim(),
-      isAdmin: isUserAdmin,
-    };
+    setIsLoading(true);
 
-    if (isEditMode) {
-      // Atualiza usuário existente
-      const userId = parseInt(params.userId as string);
-      updateUser(userId, userData);
-    } else {
-      // Cria novo usuário
-      addUser(userData);
+    try {
+      if (isEditMode) {
+        // Para modo de edição, ainda usa a função local (ou pode implementar API de update)
+        const userData = {
+          name: nome.trim(),
+          cpf: cpf, // CPF já formatado
+          group: grupo.trim(),
+          isAdmin: isUserAdmin,
+        };
+        const userId = parseInt(params.userId as string);
+        updateUser(userId, userData);
+        showSuccessModalWithAnimation();
+      } else {
+        // Registrar novo usuário via API
+        const result = await apiService.register({
+          nomeCompleto: nome.trim(),
+          cpf: cleanCPF(cpf),
+          senha: senha,
+          confirmarSenha: confirmarSenha,
+          nomeGrupo: grupo.trim(),
+          adm: isUserAdmin
+        });
+
+        if (result.success) {
+          showSuccessModalWithAnimation();
+        } else {
+          Alert.alert("Erro", result.error || "Erro ao cadastrar usuário");
+        }
+      }
+    } catch (error) {
+      Alert.alert("Erro", "Erro de conexão com o servidor");
+    } finally {
+      setIsLoading(false);
     }
-    
-    showSuccessModalWithAnimation();
   };
 
   const SuccessModal = () => {

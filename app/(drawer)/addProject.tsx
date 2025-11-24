@@ -16,12 +16,15 @@ import {
   useWindowDimensions,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
+import { useAuth } from "../../contexts/AuthContext";
 import { useProjects } from "../../contexts/ProjectContext";
+import { apiService } from "../../services/apiService";
 
 export default function AddProjectScreen() {
   const { width } = useWindowDimensions();
   const isLargeScreen = width > 600;
   const { addProject } = useProjects();
+  const { loggedUser } = useAuth();
 
   const [projectName, setProjectName] = useState("");
   const [location, setLocation] = useState("");
@@ -388,52 +391,45 @@ export default function AddProjectScreen() {
   };
 
   const handleCreateProject = async () => {
-  if (!validateFields()) {
-    return;
-  }
-
-  try {
-    const base64Image = projectImage
-      ? await fetch(projectImage)
-          .then((res) => res.blob())
-          .then(
-            (blob) =>
-              new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.readAsDataURL(blob);
-              })
-          )
-      : null;
-
-    const body = {
-      group,
-      name: projectName,
-      location,
-      startDate: startDate ? startDate.toISOString().split("T")[0] : null,
-      endDate: endDate ? endDate.toISOString().split("T")[0] : null,
-      image: base64Image,
-    };
-
-    const response = await fetch("http://localhost:5000/projetos", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    const result = await response.json();
-
-    if (response.ok) {
-      Alert.alert("Sucesso!", result.message);
-      router.replace("/(drawer)/home");
-    } else {
-      Alert.alert("Erro", result.error || "Não foi possível criar o projeto.");
+    if (!validateFields()) {
+      return;
     }
-  } catch (error) {
-    console.error(error);
-    Alert.alert("Erro", "Falha ao conectar com o servidor Flask.");
-  }
-};
+
+    if (!loggedUser) {
+      Alert.alert("Erro", "Usuário não está logado");
+      return;
+    }
+
+    try {
+      // Criar FormData para envio de arquivo
+      const formData = new FormData();
+      formData.append('nomeProjeto', projectName.trim());
+      formData.append('localizacao', location.trim());
+      formData.append('dataInicio', startDate ? startDate.toISOString().split("T")[0] : '');
+      formData.append('dataFim', endDate ? endDate.toISOString().split("T")[0] : '');
+      formData.append('nomeGrupo', group.trim());
+
+      if (projectImage) {
+        // Criar objeto File da imagem
+        const response = await fetch(projectImage);
+        const blob = await response.blob();
+        const file = new File([blob], 'project-image.jpg', { type: 'image/jpeg' });
+        formData.append('imagemInicial', file);
+      }
+
+      const result = await apiService.addProject(formData);
+
+      if (result.success) {
+        Alert.alert("Sucesso!", result.data?.message || "Projeto criado com sucesso!");
+        router.replace("/(drawer)/home");
+      } else {
+        Alert.alert("Erro", result.error || "Não foi possível criar o projeto.");
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Erro", "Falha ao conectar com o servidor.");
+    }
+  };
 
 
   return (

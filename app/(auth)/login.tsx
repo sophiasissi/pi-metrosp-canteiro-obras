@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
   useWindowDimensions,
+  ActivityIndicator,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useAuth } from "../../contexts/AuthContext";
@@ -20,33 +21,13 @@ import { cleanCPF, formatCPF, validateCPF } from "../../utils/cpfValidator";
 export default function LoginScreen() {
   const { width } = useWindowDimensions();
   const isLargeScreen = width > 600;
-  const { setLoggedUser } = useAuth();
+  const { login, isLoading } = useAuth();
 
   const [cpf, setCpf] = useState("");
   const [senha, setSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [cpfError, setCpfError] = useState("");
   const [senhaError, setSenhaError] = useState("");
-
-  // Simulação de usuários pré-cadastrados (em produção viria do backend)
-  const usuariosPrecadastrados = [
-    {
-      id: 1,
-      cpf: "123.456.789-00",
-      senha: "admin123",
-      name: "Administrador Metrô",
-      group: "Administração",
-      isAdmin: true
-    },
-    {
-      id: 2,
-      cpf: "987.654.321-00", 
-      senha: "user123",
-      name: "Usuário Comum",
-      group: "Operação",
-      isAdmin: false
-    }
-  ];
 
   const handleCpfChange = (text: string) => {
     // Usa o formatador do utilitário
@@ -88,23 +69,21 @@ export default function LoginScreen() {
     return isValid;
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!validateFields()) {
       return;
     }
 
-    // Simula chamada para o backend
-    const usuario = usuariosPrecadastrados.find(
-      u => u.cpf === cpf && u.senha === senha
-    );
+    // Chama a API do backend
+    const result = await login({
+      cpf: cleanCPF(cpf),
+      senha: senha
+    });
 
-    if (usuario) {
-      // Simula resposta do backend (sem a senha)
-      const { senha: _, ...dadosUsuario } = usuario;
-      setLoggedUser(dadosUsuario);
+    if (result.success) {
       router.push("/(drawer)/home");
     } else {
-      Alert.alert("Erro", "CPF ou senha inválidos");
+      Alert.alert("Erro", result.error || "CPF ou senha inválidos");
     }
   };
 
@@ -189,8 +168,16 @@ export default function LoginScreen() {
             Esqueceu a senha?
           </Text>
         </View>
-          <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-            <Text style={styles.loginButtonText}>ENTRAR</Text>
+          <TouchableOpacity 
+            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]} 
+            onPress={handleLogin}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.loginButtonText}>ENTRAR</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -304,6 +291,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+  },
+  loginButtonDisabled: {
+    backgroundColor: "#999999",
+    opacity: 0.7,
   },
   loginButtonText: {
     color: "#fff",
