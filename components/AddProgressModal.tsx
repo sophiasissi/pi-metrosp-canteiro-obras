@@ -121,7 +121,7 @@ export default function AddProgressModal({ visible, onClose, projectId }: AddPro
       
       setIsAnalyzing(false);
       handleClose();
-    } catch (error) {
+    } catch {
       setIsAnalyzing(false);
       Alert.alert('Erro', 'Falha ao analisar o progresso. Tente novamente.');
     }

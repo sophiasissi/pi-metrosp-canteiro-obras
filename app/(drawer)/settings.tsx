@@ -2,14 +2,13 @@ import { ThemedView } from "@/components/themed-view";
 import { router } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
-    Alert,
-    Dimensions,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUsers } from "../../contexts/UsersContext";
@@ -28,9 +27,6 @@ export default function Settings() {
       user.cpf.replace(/\D/g, '').includes(searchQuery.replace(/\D/g, ''))
     );
   }, [searchQuery, users, isAdmin]);
-
-  const { width } = Dimensions.get("window");
-  const isSmallScreen = width < 400;
 
   // Função para navegar para edição de dados do usuário
   function handleEditUserData(userData?: any) {
@@ -82,16 +78,18 @@ export default function Settings() {
             <Text style={styles.sectionTitle}>👤 Minha Conta</Text>
             
             <View style={styles.userCard}>
-              <Text style={styles.userName}>{loggedUser.name}</Text>
+              <Text style={styles.userName}>{loggedUser.nomeCompleto}</Text>
               <View style={styles.userInfo}>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>CPF: </Text>
                   <Text style={styles.infoValue}>{loggedUser.cpf}</Text>
                 </View>
-                {loggedUser.group && (
+                {(loggedUser.grupoID || loggedUser.nomeGrupo) && (
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Grupo: </Text>
-                    <Text style={styles.infoValue}>{loggedUser.group}</Text>
+                    <Text style={styles.infoLabel}>Grupo:</Text>
+                    <Text style={styles.infoValue}>
+                      {loggedUser.nomeGrupo || `Grupo ${loggedUser.grupoID}`}
+                    </Text>
                   </View>
                 )}
               </View>
@@ -179,16 +177,18 @@ export default function Settings() {
               
               {/* Usuário atual se for admin */}
               <View style={styles.adminUserCard}>
-                <Text style={styles.adminUserName}>{loggedUser.name} (Você)</Text>
+                <Text style={styles.adminUserName}>{loggedUser.nomeCompleto} (Você)</Text>
                 <View style={styles.userInfo}>
                   <View style={styles.infoRow}>
                     <Text style={styles.infoLabel}>CPF: </Text>
                     <Text style={styles.infoValue}>{loggedUser.cpf}</Text>
                   </View>
-                  {loggedUser.group && (
+                  {(loggedUser.grupoID || loggedUser.nomeGrupo) && (
                     <View style={styles.infoRow}>
-                      <Text style={styles.infoLabel}>Grupo: </Text>
-                      <Text style={styles.infoValue}>{loggedUser.group}</Text>
+                      <Text style={styles.infoLabel}>Grupo:</Text>
+                      <Text style={styles.infoValue}>
+                        {loggedUser.nomeGrupo || `Grupo ${loggedUser.grupoID}`}
+                      </Text>
                     </View>
                   )}
                 </View>
@@ -205,7 +205,7 @@ export default function Settings() {
 
               {/* Outros administradores */}
               {users
-                .filter(user => user.isAdmin && user.id !== loggedUser.id)
+                .filter(user => user.adm && user.usuarioID !== loggedUser.usuarioID)
                 .map((admin) => (
                   <View key={admin.id} style={styles.adminUserCard}>
                     <Text style={styles.adminUserName}>{admin.name}</Text>

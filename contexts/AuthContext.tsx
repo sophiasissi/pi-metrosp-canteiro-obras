@@ -1,13 +1,6 @@
 import React, { createContext, ReactNode, useContext, useState } from 'react';
-import { apiService, LoginRequest } from '../services/apiService';
-
-export interface LoggedUser {
-  usuarioID: number;
-  nomeCompleto: string;
-  cpf: string;
-  grupoID?: number;
-  adm: boolean;
-}
+import { apiService } from '../services/apiService';
+import type { LoggedUser, LoginRequest } from '../types/api';
 
 interface AuthContextType {
   loggedUser: LoggedUser | null;
@@ -45,6 +38,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           grupoID: result.data.usuario.grupoID,
           adm: result.data.usuario.adm,
         };
+
+        // Buscar informações completas do usuário incluindo nome do grupo
+        try {
+          const userInfoResult = await apiService.getUserInfo(user.cpf);
+          if (userInfoResult.success && userInfoResult.data) {
+            user.nomeGrupo = userInfoResult.data.nomeGrupo;
+          }
+        } catch (error) {
+          console.warn('Não foi possível buscar nome do grupo:', error);
+        }
         
         setLoggedUser(user);
         return { success: true };

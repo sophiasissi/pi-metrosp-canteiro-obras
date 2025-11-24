@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Image,
@@ -17,13 +17,11 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useAuth } from "../../contexts/AuthContext";
-import { useProjects } from "../../contexts/ProjectContext";
 import { apiService } from "../../services/apiService";
 
 export default function AddProjectScreen() {
   const { width } = useWindowDimensions();
   const isLargeScreen = width > 600;
-  const { addProject } = useProjects();
   const { loggedUser } = useAuth();
 
   const [projectName, setProjectName] = useState("");
@@ -35,6 +33,11 @@ export default function AddProjectScreen() {
   const [currentDateType, setCurrentDateType] = useState<'start' | 'end' | null>(null);
   const [group, setGroup] = useState("");
   const [projectImage, setProjectImage] = useState<string | null>(null);
+
+  // Estados para grupos
+  const [availableGroups, setAvailableGroups] = useState<{ grupoID: number; nomeGrupo: string }[]>([]);
+  const [showGroupDropdown, setShowGroupDropdown] = useState(false);
+  const [loadingGroups, setLoadingGroups] = useState(false);
 
   const [projectNameError, setProjectNameError] = useState("");
   const [locationError, setLocationError] = useState("");
@@ -50,6 +53,34 @@ export default function AddProjectScreen() {
       year: 'numeric'
     });
   };
+
+  // Carregar grupos disponíveis quando o componente monta
+  useEffect(() => {
+    const loadGroups = async () => {
+      setLoadingGroups(true);
+      try {
+        const result = await apiService.getGroups();
+        if (result.success && result.data) {
+          setAvailableGroups(result.data.grupos);
+          
+          // Se o usuário logado tem grupo, defini-lo como padrão
+          if (loggedUser?.nomeGrupo) {
+            const userGroup = result.data.grupos.find(g => g.nomeGrupo === loggedUser.nomeGrupo);
+            if (userGroup) {
+              setGroup(userGroup.nomeGrupo);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao carregar grupos:', error);
+        Alert.alert('Erro', 'Não foi possível carregar os grupos disponíveis.');
+      } finally {
+        setLoadingGroups(false);
+      }
+    };
+
+    loadGroups();
+  }, [loggedUser?.nomeGrupo]);
 
 
   const CustomCalendar = ({ onDateSelect, isEndDate }: { onDateSelect: (date: Date) => void; isEndDate?: boolean }) => {
@@ -351,7 +382,7 @@ export default function AddProjectScreen() {
         setProjectImage(result.assets[0].uri);
         setImageError("");
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Erro', 'Não foi possível abrir a câmera.');
     }
   };
@@ -382,7 +413,7 @@ export default function AddProjectScreen() {
         setProjectImage(result.assets[0].uri);
         setImageError("");
       }
-    } catch (error) {
+    } catch {
       const errorMessage = Platform.OS === 'web'
         ? 'Não foi possível selecionar a imagem. Verifique se o arquivo é uma imagem válida.'
         : 'Não foi possível abrir a galeria.';
@@ -643,20 +674,58 @@ export default function AddProjectScreen() {
             {}
             <View style={styles.fieldContainer}>
               <Text style={styles.label}>Grupo:</Text>
-              <TextInput
+              <TouchableOpacity
                 style={[
                   styles.input,
                   isLargeScreen && styles.inputLarge,
                   groupError ? styles.inputError : null,
+                  styles.dropdownButton
                 ]}
-                placeholder="Digite o nome do grupo"
-                placeholderTextColor="#B0B0B0"
-                value={group}
-                onChangeText={(text) => {
-                  setGroup(text);
-                  if (groupError) setGroupError("");
-                }}
-              />
+                onPress={() => setShowGroupDropdown(!showGroupDropdown)}
+                disabled={loadingGroups}
+              >
+                <Text style={[
+                  styles.dropdownText,
+                  !group && styles.placeholderText
+                ]}>
+                  {loadingGroups 
+                    ? "Carregando grupos..." 
+                    : group || "Selecione um grupo"
+                  }
+                </Text>
+                <Icon 
+                  name={showGroupDropdown ? "chevron-up" : "chevron-down"} 
+                  size={16} 
+                  color="#666" 
+                />
+              </TouchableOpacity>
+
+              {showGroupDropdown && !loadingGroups && (
+                <View style={styles.dropdownList}>
+                  {availableGroups.length > 0 ? (
+                    availableGroups.map((grupo) => (
+                      <TouchableOpacity
+                        key={grupo.grupoID}
+                        style={styles.dropdownItem}
+                        onPress={() => {
+                          setGroup(grupo.nomeGrupo);
+                          setShowGroupDropdown(false);
+                          if (groupError) setGroupError("");
+                        }}
+                      >
+                        <Text style={styles.dropdownItemText}>{grupo.nomeGrupo}</Text>
+                      </TouchableOpacity>
+                    ))
+                  ) : (
+                    <View style={styles.dropdownItem}>
+                      <Text style={[styles.dropdownItemText, styles.noOptionsText]}>
+                        Nenhum grupo encontrado
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+
               {groupError ? (
                 <Text style={styles.errorText}>{groupError}</Text>
               ) : null}
@@ -1061,6 +1130,51 @@ const styles = StyleSheet.create({
   },
   disabledDayText: {
     color: '#d9e1e8',
+  },
+  
+  // Estilos para o dropdown de grupos
+  dropdownButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dropdownText: {
+    fontSize: 16,
+    color: '#333333',
+    flex: 1,
+  },
+  placeholderText: {
+    color: '#B0B0B0',
+  },
+  dropdownList: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    marginTop: 5,
+    maxHeight: 200,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  dropdownItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    color: '#333333',
+  },
+  noOptionsText: {
+    fontStyle: 'italic',
+    color: '#999999',
   },
 
 });

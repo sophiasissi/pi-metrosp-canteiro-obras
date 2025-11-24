@@ -1,62 +1,13 @@
 // Configuração da API
+import type {
+  ApiResponse,
+  LoginRequest,
+  LoginResponse,
+  Project,
+  RegisterRequest
+} from '../types/api';
+
 const API_BASE_URL = 'http://127.0.0.1:5000/api'; // Endereço do backend Flask
-
-export interface LoginRequest {
-  cpf: string;
-  senha: string;
-}
-
-export interface LoginResponse {
-  message: string;
-  usuario: {
-    usuarioID: number;
-    nomeCompleto: string;
-    cpf: string;
-    grupoID: number;
-    adm: boolean;
-  };
-}
-
-export interface RegisterRequest {
-  nomeCompleto: string;
-  cpf: string;
-  senha: string;
-  confirmarSenha: string;
-  nomeGrupo: string;
-  adm?: boolean;
-}
-
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  status: number;
-}
-
-export interface AddProjectRequest {
-  nomeProjeto: string;
-  localizacao: string;
-  dataInicio: string;
-  dataFim: string;
-  nomeGrupo: string;
-  imagemInicial: File;
-}
-
-export interface Project {
-  projetoID: number;
-  nomeProjeto: string;
-  localizacao: string;
-  dataInicio: string;
-  dataFim: string;
-  imagemInicial: string;
-  imagensProgresso: ProgressImage[];
-}
-
-export interface ProgressImage {
-  imagemID: number;
-  caminhoImagem: string;
-  porcentagem: number;
-}
 
 class ApiService {
   private async makeRequest<T>(
@@ -236,6 +187,13 @@ class ApiService {
         status: 0,
       };
     }
+  }
+
+  // Buscar todos os grupos disponíveis
+  async getGroups(): Promise<ApiResponse<{ grupos: { grupoID: number; nomeGrupo: string }[] }>> {
+    return this.makeRequest<{ grupos: { grupoID: number; nomeGrupo: string }[] }>('/groups', {
+      method: 'GET',
+    });
   }
 }
 

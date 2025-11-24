@@ -51,13 +51,6 @@ export default function HomeScreen() {
     return "#27AE60";                            // Verde escuro - Completo
   };
 
-  const getProgressTextColor = (progress: number) => {
-    if (progress === 0) return "#666";           // Cinza escuro para contraste com cinza claro
-    if (progress <= 60) return "#FFF";           // Branco para cores escuras (vermelho, laranja)
-    if (progress <= 80) return "#333";           // Escuro para amarelo
-    return "#FFF";                               // Branco para verdes
-  };
-
   const handleProjectPress = (projectId: string) => {
     router.push({
       pathname: "/(drawer)/projectDetails" as any,
@@ -67,10 +60,17 @@ export default function HomeScreen() {
 
   const getLastImage = (project: Project) => {
     const lastProgressImage =
-      project.progressHistory && project.progressHistory.length > 0
-        ? project.progressHistory[project.progressHistory.length - 1]?.image
+      project.imagensProgresso && project.imagensProgresso.length > 0
+        ? project.imagensProgresso[project.imagensProgresso.length - 1]?.caminhoImagem
         : null;
-    return lastProgressImage || project.image;
+    return lastProgressImage || project.imagemInicial;
+  };
+
+  const getProgress = (project: Project): number => {
+    if (project.imagensProgresso && project.imagensProgresso.length > 0) {
+      return project.imagensProgresso[project.imagensProgresso.length - 1]?.porcentagem || 0;
+    }
+    return 0;
   };
 
   const renderProject = ({ item }: { item: Project }) => {
@@ -92,7 +92,7 @@ export default function HomeScreen() {
             <View
               style={[
                 styles.projectImagePlaceholder,
-                { backgroundColor: getProjectColor(item.progress) },
+                { backgroundColor: getProjectColor(getProgress(item)) },
               ]}
             >
               <Text style={styles.projectImageText}>
@@ -104,18 +104,18 @@ export default function HomeScreen() {
 
         <TouchableOpacity
           style={styles.projectDetails}
-          onPress={() => handleProjectPress(item.id)}
+          onPress={() => handleProjectPress(item.projetoID.toString())}
         >
-          <Text style={styles.projectName}>{item.name}</Text>
+          <Text style={styles.projectName}>{item.nomeProjeto}</Text>
           <View style={styles.progressContainer}>
             <Text style={styles.progressLabel}>Progresso</Text>
             <Text 
               style={[
                 styles.progressPercent,
-                { color: getProgressBarColor(item.progress) }
+                { color: getProgressBarColor(getProgress(item)) }
               ]}
             >
-              {item.progress}%
+              {getProgress(item)}%
             </Text>
           </View>
           <View style={styles.progressBarContainer}>
@@ -124,8 +124,8 @@ export default function HomeScreen() {
                 style={[
                   styles.progressBarFill,
                   {
-                    width: `${item.progress}%`,
-                    backgroundColor: getProgressBarColor(item.progress),
+                    width: `${getProgress(item)}%`,
+                    backgroundColor: getProgressBarColor(getProgress(item)),
                   },
                 ]}
               />
@@ -169,7 +169,7 @@ export default function HomeScreen() {
             <FlatList
               data={projects.slice(0, 5)}
               renderItem={renderProject}
-              keyExtractor={(item) => item.id}
+              keyExtractor={(item) => item.projetoID.toString()}
               showsVerticalScrollIndicator={false}
               scrollEnabled={false}
             />

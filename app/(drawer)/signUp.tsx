@@ -13,20 +13,19 @@ import {
   TextInput,
   TouchableOpacity,
   useWindowDimensions,
-  View,
-  ActivityIndicator
+  View
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUsers } from "../../contexts/UsersContext";
-import { cleanCPF, formatCPF, validateCPF } from "../../utils/cpfValidator";
 import { apiService } from "../../services/apiService";
+import { cleanCPF, formatCPF, validateCPF } from "../../utils/cpfValidator";
 
 export default function SignUpScreen() {
   const { width } = useWindowDimensions();
   const isLargeScreen = width > 600;
-  const { addUser, updateUser } = useUsers();
   const { loggedUser, isAdmin } = useAuth();
+  const { updateUser } = useUsers();
   const params = useLocalSearchParams();
 
   // Verifica se está em modo de edição
@@ -65,7 +64,6 @@ export default function SignUpScreen() {
   const [senhaError, setSenhaError] = useState("");
   const [confirmarSenhaError, setConfirmarSenhaError] = useState("");
   const [grupoError, setGrupoError] = useState("");
-  const [selectedGroup, setSelectedGroup] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -156,12 +154,6 @@ export default function SignUpScreen() {
     // Permite apenas letras (incluindo acentos) e espaços
     const nomeRegex = /^[A-Za-zÀ-ÿ\s]+$/;
     return nomeRegex.test(nome);
-  };
-
-  const validateCpfInput = (cpf: string) => {
-    // Para validação durante digitação - permite apenas números
-    const cpfNumbers = cpf.replace(/\D/g, '');
-    return cpfNumbers.length <= 11 && /^\d*$/.test(cpfNumbers);
   };
 
   const validateGrupo = (grupo: string) => {
@@ -291,7 +283,6 @@ export default function SignUpScreen() {
     setNome("");
     setCpf("");
     setGrupo("");
-    setSelectedGroup("");
     setIsUserAdmin(false);
     setNomeError("");
     setCpfError("");
@@ -331,15 +322,13 @@ export default function SignUpScreen() {
 
     try {
       if (isEditMode) {
-        // Para modo de edição, ainda usa a função local (ou pode implementar API de update)
+        // Para modo de edição usando API de update
         const userData = {
-          name: nome.trim(),
-          cpf: cpf, // CPF já formatado
-          group: grupo.trim(),
-          isAdmin: isUserAdmin,
+          nomeCompleto: nome.trim(),
+          nomeGrupo: grupo.trim(),
+          adm: isUserAdmin,
         };
-        const userId = parseInt(params.userId as string);
-        updateUser(userId, userData);
+        await updateUser(cleanCPF(cpf), userData);
         showSuccessModalWithAnimation();
       } else {
         // Registrar novo usuário via API
@@ -358,8 +347,9 @@ export default function SignUpScreen() {
           Alert.alert("Erro", result.error || "Erro ao cadastrar usuário");
         }
       }
-    } catch (error) {
+    } catch (err) {
       Alert.alert("Erro", "Erro de conexão com o servidor");
+      console.error("Erro no cadastro:", err);
     } finally {
       setIsLoading(false);
     }
@@ -617,8 +607,14 @@ export default function SignUpScreen() {
               </View>
             ) : (
               // Modo de criação - botão único
-              <TouchableOpacity style={styles.signUpButton} onPress={handleSignUp}>
-                <Text style={styles.signUpButtonText}>CADASTRAR</Text>
+              <TouchableOpacity 
+                style={[styles.signUpButton, isLoading && styles.buttonDisabled]} 
+                onPress={handleSignUp}
+                disabled={isLoading}
+              >
+                <Text style={styles.signUpButtonText}>
+                  {isLoading ? "CADASTRANDO..." : "CADASTRAR"}
+                </Text>
               </TouchableOpacity>
             )}
           </View>

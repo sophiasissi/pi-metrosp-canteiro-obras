@@ -151,3 +151,19 @@ def delete():
     db.session.commit()
 
     return jsonify({'message': f'Usuário {cpf} removido com sucesso!'}), 200
+
+@usuarios_bp.route('/groups', methods=['GET'])
+def list_groups():
+    """Retorna todos os grupos cadastrados no sistema"""
+    try:
+        grupos = Grupos.query.all()
+        grupos_list = [
+            {
+                'grupoID': grupo.grupoID,
+                'nomeGrupo': grupo.nomeGrupo
+            }
+            for grupo in grupos
+        ]
+        return jsonify({'grupos': grupos_list}), 200
+    except Exception as e:
+        return jsonify({'error': 'Erro ao buscar grupos'}), 500
