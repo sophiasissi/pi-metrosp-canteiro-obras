@@ -1,233 +1,266 @@
-# 🚇 PI Metrô SP - Canteiro de Obras
+# 🚇 Sistema de Gerenciamento de Obras - Metrô SP
 
-Sistema de gerenciamento e acompanhamento de progresso de projetos de construção para o Metrô de São Paulo. Desenvolvido como Projeto Integrador pelos alunos do Instituto Mauá de Tecnologia.
+Sistema móvel para acompanhamento e gestão de projetos de construção do Metrô de São Paulo, desenvolvido como Projeto Integrador no Instituto Mauá de Tecnologia.
 
 ## 🎯 Sobre o Projeto
 
-O **PI Metrô SP** é uma aplicação móvel multiplataforma desenvolvida em React Native/Expo para auxiliar no gerenciamento de projetos de construção do Metrô de São Paulo. O sistema permite o cadastro, monitoramento e acompanhamento visual do progresso de obras através de fotografias e métricas de progresso.
+Aplicação completa (mobile + backend) para gerenciar obras de construção com:
+- **Monitoramento visual** de progresso através de fotografias
+- **Gestão de usuários** e projetos  
+- **Análise automatizada** com CNN para cálculo de progresso
+- **Interface responsiva** e intuitiva
 
-### 🏗️ Funcionalidades Principais
+## 🛠️ Arquitetura do Sistema
 
-- **📋 Gerenciamento de Projetos**: Criação e edição de projetos com informações completas
-- **📸 Acompanhamento Visual**: Sistema de fotos para monitorar o progresso das obras
-- **📊 Métricas de Progresso**: Cálculo automático e visualização do percentual de conclusão
-- **🎨 Sistema de Cores**: Indicadores visuais por nível de progresso (7 cores diferentes)
-- **👥 Gestão de Usuários**: Sistema de cadastro e autenticação de usuários
-- **🔍 Busca Inteligente**: Pesquisa de usuários e projetos
-- **📱 Interface Responsiva**: Design adaptativo para diferentes tamanhos de tela
+### 📱 **Frontend (React Native + Expo)**
+- **Framework**: React Native com Expo SDK 54
+- **Linguagem**: TypeScript
+- **Navegação**: Expo Router (file-based)
+- **Estado**: Context API + useState
 
-## 🛠️ Tecnologias Utilizadas
-
-### Frontend
-- **React Native** com **Expo SDK 54**
-- **TypeScript** para tipagem estática
-- **Expo Router** para navegação file-based
-- **Context API** para gerenciamento de estado global
-- **React Navigation** (Drawer e Stack navigation)
-
-### Recursos e Bibliotecas
-- **Expo Image Picker** - Captura de fotos (câmera/galeria)
-- **Expo Vector Icons** - Ícones do sistema
-- **React Native Vector Icons** - Ícones FontAwesome
-- **Async Storage** - Persistência local de dados
-
-### Estrutura do Projeto
+**Estrutura Principal:**
 ```
 📁 app/
-├── 📁 (auth)/          # Telas de autenticação
-├── 📁 (drawer)/        # Telas principais (navegação drawer)
-└── _layout.tsx         # Layout raiz com providers
+├── (auth)/        # Login, cadastro
+├── (drawer)/      # Telas principais  
+└── _layout.tsx    # Providers globais
 
-📁 components/          # Componentes reutilizáveis
-├── AddProgressModal.tsx
-├── PhotoProgressList.tsx
-└── themed-*.tsx
-
-📁 contexts/           # Gerenciamento de estado
-└── ProjectContext.tsx # Context de projetos
-
-📁 constants/          # Constantes e configurações
-└── theme.ts
-
-📁 scripts/            # Scripts utilitários
-└── comparador_imagens.py  # CNN para análise de progresso
+📁 components/     # Componentes reutilizáveis
+📁 contexts/       # Gerenciamento de estado
+📁 services/       # Comunicação com API
 ```
 
-## 🚀 Como Executar
+### 🖥️ **Backend (Flask + Python)**
+- **Framework**: Flask
+- **Banco de dados**: MySQL
+- **ORM**: SQLAlchemy  
+- **Autenticação**: BCrypt
+- **Upload**: Sistema local de arquivos
+- **CORS**: Habilitado para mobile
 
-### Pré-requisitos
+**Estrutura do Backend:**
+```
+📁 backend/
+├── app.py              # Servidor principal
+├── models.py           # Modelos do banco
+├── dbConnection.py     # Configuração MySQL
+├── comparador_imagem.py # CNN para análise
+└── routes/             # Endpoints da API
+    ├── usuarios_routes.py
+    ├── projetos_routes.py  
+    └── imagensProgresso_routes.py
+```
 
-- **Node.js** 18+ ([Download](https://nodejs.org/))
-- **Git** ([Download](https://git-scm.com/))
-- **Expo Go** no dispositivo móvel:
-  - [iOS - App Store](https://apps.apple.com/app/expo-go/id982107779)
-  - [Android - Google Play](https://play.google.com/store/apps/details?id=host.exp.exponent)
+### 🗄️ **Banco de Dados (MySQL)**
+**Tabelas principais:**
+- `usuarios` - Dados de usuários e autenticação
+- `grupos` - Grupos de trabalho
+- `projetos` - Informações dos projetos
+- `imagens_progresso` - Histórico de fotos e progresso
 
-### Instalação
+## 🚀 Instalação e Execução
 
-1. **Clone o repositório**
+### **Pré-requisitos**
+- Node.js 18+
+- Python 3.8+
+- MySQL 8.0+
+- Expo Go (mobile)
+
+### **1. Frontend (React Native)**
 ```bash
+# Clone o repositório
 git clone https://github.com/sophiasissi/pi-metrosp-canteiro-obras.git
 cd pi-metrosp-canteiro-obras
-```
 
-2. **Instale as dependências**
-```bash
+# Instale dependências
 npm install
-```
 
-3. **Inicie o servidor de desenvolvimento**
-```bash
+# Execute o aplicativo
 npx expo start
 ```
 
-4. **Execute no dispositivo**
-- Escaneie o QR Code com o Expo Go
-- Ou pressione `a` para Android / `i` para iOS (emulador)
-- Ou pressione `w` para abrir no navegador web
-
-### Scripts Disponíveis
-
+### **2. Backend (Flask)**
 ```bash
-npm start          # Inicia o servidor Expo
-npm run android    # Executa no emulador Android
-npm run ios        # Executa no simulador iOS  
-npm run web        # Executa no navegador web
-npm run lint       # Executa o linter
+# Entre na pasta backend
+cd backend
+
+# Instale dependências Python
+pip install flask flask-sqlalchemy pymysql
+pip install flask-cors flask-bcrypt
+pip install boto3 python-dotenv cryptography
+pip install numpy opencv-python
+
+# Configure o banco MySQL (edite dbConnection.py)
+# URI: mysql+pymysql://root:579924@127.0.0.1:3306/pii
+
+# Execute o servidor
+python app.py
 ```
 
-## 📱 Funcionalidades Detalhadas
+### **3. Banco de Dados**
+```sql
+-- Crie o banco de dados
+CREATE DATABASE pii;
 
-### 🏗️ Gestão de Projetos
+-- Execute o app para criar as tabelas automaticamente
+-- SQLAlchemy criará as tabelas baseadas nos models
+```
 
-#### Cadastro de Projetos
-- **Informações básicas**: Nome, localização, grupo
-- **Período de execução**: Datas de início e fim com calendário customizado
-- **Imagem inicial**: Foto de referência do projeto
-- **Validação completa**: Campos obrigatórios e validação de datas
+## 📱 Funcionalidades
 
-#### Visualização e Detalhes
-- **Cards visuais**: Layout responsivo com fotos e informações
-- **Barra de progresso**: Indicador visual colorido por nível
-- **Informações completas**: Período, localização, grupo e progresso
+### 🏗️ **Gestão de Projetos**
+- ✅ Cadastro com nome, local, período, grupo
+- ✅ Validação de datas (não permite datas passadas)
+- ✅ Upload de imagem inicial
+- ✅ Visualização em cards responsivos
 
-### 📸 Sistema de Acompanhamento
+### 📸 **Acompanhamento de Progresso** 
+- ✅ Adição de fotos via câmera/galeria
+- ✅ Cálculo automático de percentual
+- ✅ Histórico visual cronológico
+- ✅ Sistema de cores por nível de progresso
 
-#### Adição de Progresso
-- **Modal intuitivo**: Interface simples para adicionar fotos
-- **Múltiplas fontes**: Câmera ou galeria de fotos
-- **Cálculo automático**: Progresso baseado no número de fotos
-- **Nomenclatura automática**: "Imagem #1", "Imagem #2", etc.
+### 👥 **Gestão de Usuários**
+- ✅ Cadastro e autenticação
+- ✅ Perfis de usuário e administrador
+- ✅ Edição de dados pessoais
+- ✅ Exclusão de usuários (admin)
 
-#### Histórico Visual
-- **Lista cronológica**: Todas as fotos com datas e progresso
-- **Cores por progresso**:
-  - 🟣 0-25%: Roxo (#8E44AD)
-  - 🟠 26-50%: Laranja (#E67E22) 
-  - 🔴 51-75%: Vermelho (#E74C3C)
-  - 🟡 76-100%: Amarelo (#F39C12)
+### 🤖 **Análise CNN (Preparado)**
+- ✅ Script de comparação de imagens
+- ✅ Interface preparada para CNN
+- ✅ Estrutura para análise automatizada
 
-### 👥 Gestão de Usuários
+## 🎨 Recursos Técnicos
 
-#### Sistema de Cadastro
-- **Informações pessoais**: Nome, email, grupo
-- **Validação robusta**: Email único, senhas seguras
-- **Tipos de usuário**: Usuário comum e Administrador
+### **Principais Dependências Frontend**
+```json
+{
+  "expo": "~54.0.13",
+  "react-native": "0.81.4", 
+  "expo-router": "~6.0.11",
+  "expo-image-picker": "~17.0.8",
+  "react-native-vector-icons": "^10.3.0",
+  "axios": "^1.13.1"
+}
+```
 
-#### Configurações
-- **Modo Administrador**: Gestão completa de usuários
-- **Busca inteligente**: Pesquisa por nome ou email
-- **Edição de perfil**: Alteração de dados pessoais
-
-## 🔮 Preparação para CNN
-
-O projeto está preparado para integração com **Redes Neurais Convolucionais (CNN)** para análise automatizada do progresso das obras:
-
-### 🧠 Infraestrutura CNN
-- **Script Python**: `comparador_imagens.py` para análise de imagens
-- **Simulação de loading**: Modal com indicador de processamento CNN
-- **Estrutura de dados**: Preparada para receber análises automatizadas
-
-### 🎯 Funcionalidades Futuras
-- **Análise automática**: Comparação entre foto inicial e progresso atual
-- **Cálculo inteligente**: Progresso baseado em análise visual por CNN
-- **Validação de qualidade**: Detecção de anomalias e problemas na obra
+### **Principais Dependências Backend**
+```
+Flask==2.3.3
+Flask-SQLAlchemy==3.0.5  
+Flask-CORS==4.0.0
+Flask-Bcrypt==1.0.1
+PyMySQL==1.1.0
+OpenCV-Python==4.8.1
+NumPy==1.24.3
+```
 
 ## 🎨 Design System
 
-### 🎨 Paleta de Cores
-- **Primary**: #001489 (Azul Metrô)
-- **Background**: #F5F7FA (Cinza claro)
-- **Cards**: #FFFFFF (Branco)
-- **Text**: #333333 (Cinza escuro)
-- **Error**: #E74C3C (Vermelho)
+**Cores do Metrô SP:**
+- **Primária**: `#001489` (Azul Metrô)
+- **Background**: `#F5F7FA` (Cinza claro)
+- **Cards**: `#FFFFFF` (Branco)
+- **Erro**: `#E74C3C` (Vermelho)
 
-### 📐 Componentes
-- **Cards responsivos**: Adaptáveis a diferentes tamanhos
-- **Modals customizados**: Design consistente e acessível
-- **Calendário nativo**: Interface intuitiva para seleção de datas
-- **Formulários validados**: Feedback visual imediato
+**Cores de Progresso:**
+- ⚫ 0%: `#95A5A6` (Cinza - Não iniciado)
+- 🔴 1-20%: `#E74C3C` (Vermelho - Muito baixo)
+- 🟠 21-40%: `#FF6B35` (Laranja avermelhado - Baixo)
+- 🟡 41-60%: `#F39C12` (Laranja - Médio baixo)
+- 🟨 61-80%: `#F1C40F` (Amarelo - Médio alto)
+- 🟢 81-99%: `#2ECC71` (Verde claro - Alto)
+- ✅ 100%: `#27AE60` (Verde escuro - Completo)
 
-## 👨‍💻 Equipe de Desenvolvimento
+## 🔗 API Endpoints
 
-**Instituto Mauá de Tecnologia - Projeto Integrador 2025.2**
+### **Usuários**
+- `POST /api/user/register` - Cadastro
+- `POST /api/user/login` - Autenticação  
+- `PUT /api/user/settings/change-info` - Editar dados
+- `DELETE /api/user/delete` - Excluir usuário
 
-Desenvolvido para o Metrô de São Paulo pelos estudantes:
+### **Projetos**  
+- `POST /api/projects/create` - Criar projeto
+- `GET /api/projects/list/{grupoID}` - Listar projetos
+- `GET /api/projects/show/{projetoID}` - Detalhes do projeto
+
+### **Progresso**
+- `POST /api/progress/upload/{projetoID}` - Upload de foto
+- `GET /api/progress/list/{projetoID}` - Histórico de progresso
+
+## 👨‍💻 Equipe
+
+**Instituto Mauá de Tecnologia - 2025.2**
 
 | Desenvolvedor | GitHub | RA |
 |---------------|--------|-----|
-| **Douglas Portatil Silva** | [@Douglista](https://github.com/Douglista) | 23.01206-4 |
-| **Gustavo Coutinho Arruda** | [@guctn](https://github.com/guctn) | 23.00938-0 |
-| **Sophia Sissi Curcio Guedes** | [@sophiasissi](https://github.com/sophiasissi) | 23.01044-4 |
-| **Thiago Augusto da Costa Soto** | [@ThiagoSoto](https://github.com/ThiagoSoto) | 23.01679-5 |
-| **Victor Pazo Molina da Silva** | [@VictorPazo](https://github.com/VictorPazo) | 22.00429-7 |
+| Douglas Portatil Silva | [@Douglista](https://github.com/Douglista) | 23.01206-4 |
+| Gustavo Coutinho Arruda | [@guctn](https://github.com/guctn) | 23.00938-0 |
+| Sophia Sissi Curcio Guedes | [@sophiasissi](https://github.com/sophiasissi) | 23.01044-4 |
+| Thiago Augusto da Costa Soto | [@ThiagoSoto](https://github.com/ThiagoSoto) | 23.01679-5 |
+| Victor Pazo Molina da Silva | [@VictorPazo](https://github.com/VictorPazo) | 22.00429-7 |
 
-## 📋 Estrutura de Dados
+## 📋 Estruturas de Dados
 
-### Project Interface
+### **Usuário**
 ```typescript
+interface User {
+  usuarioID: number;
+  nomeCompleto: string;
+  cpf: string;
+  grupoID: number;
+  nomeGrupo: string;
+  adm: boolean;
+}
+```
+
+### **Projeto**
+```typescript 
 interface Project {
-  id: string;
-  name: string;
-  location: string;
-  period: string;
-  group: string;
-  createdAt: Date;
-  image?: string;
-  progress: number;
-  progressHistory?: ProgressEntry[];
+  projetoID: number;
+  nomeProjeto: string;
+  localizacao: string;
+  dataInicio: string;
+  dataFim: string;
+  imagemInicial: string;
+  grupoID: number;
 }
 ```
 
-### ProgressEntry Interface
+### **Progresso**
 ```typescript
-interface ProgressEntry {
-  id: string;
-  projectId: string;
-  progress: number;
-  image?: string;
-  observations?: string;
-  createdAt: Date;
+interface Progress {
+  imagemID: number;
+  projetoID: number;
+  porcentagem: number;
+  dataEnvio: string;
+  caminhoImagem: string;
 }
 ```
 
-## 🔧 Configurações de Desenvolvimento
+## 🔧 Configuração
 
-### ESLint + TypeScript
-- Configuração completa para qualidade de código
-- Regras específicas para React Native/Expo
-- Integração com VS Code
+### **Configurar Backend**
+1. Edite `backend/dbConnection.py` com suas credenciais MySQL:
+```python
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://user:password@host:port/database'
+```
 
-### Permissões
-- **Câmera**: Captura de fotos do progresso
-- **Galeria**: Seleção de imagens existentes
-- **Armazenamento**: Persistência local de dados
+2. Execute `python app.py` para criar tabelas automaticamente
+
+### **Configurar Frontend** 
+1. Edite `services/apiService.ts` com IP do backend:
+```typescript
+const API_BASE_URL = 'http://SEU_IP:5000/api';
+```
 
 ## 📄 Licença
 
-Este projeto foi desenvolvido como Projeto Integrador para fins acadêmicos em parceria com o Metrô de São Paulo.
+Projeto acadêmico desenvolvido em parceria com o **Metrô de São Paulo**.
 
 ---
 
-**📧 Contato**: [Instituto Mauá de Tecnologia](https://maua.br)  
-**🌐 Repositório**: [GitHub - pi-metrosp-canteiro-obras](https://github.com/sophiasissi/pi-metrosp-canteiro-obras)
+**📧 Contato**: Instituto Mauá de Tecnologia  
+**🌐 GitHub**: [pi-metrosp-canteiro-obras](https://github.com/sophiasissi/pi-metrosp-canteiro-obras)
