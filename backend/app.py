@@ -5,6 +5,7 @@ from flask_cors import CORS
 from routes.usuarios_routes import usuarios_bp
 from routes.projetos_routes import projetos_bp
 from routes.imagensProgresso_routes import imagens_progresso_bp
+from routes.grupos_routes import grupos_bp
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -21,6 +22,7 @@ def index():
 app.register_blueprint(usuarios_bp, url_prefix='/api')
 app.register_blueprint(projetos_bp, url_prefix='/api')
 app.register_blueprint(imagens_progresso_bp, url_prefix='/api')
+app.register_blueprint(grupos_bp, url_prefix='/api')
 
 
 if __name__ == '__main__':
