@@ -1,10 +1,10 @@
 // Configuração da API
 import type {
-  ApiResponse,
-  LoginRequest,
-  LoginResponse,
-  Project,
-  RegisterRequest
+    ApiResponse,
+    LoginRequest,
+    LoginResponse,
+    Project,
+    RegisterRequest
 } from '../types/api';
 
 const API_BASE_URL = 'http://127.0.0.1:5000/api'; // Endereço do backend Flask
@@ -32,16 +32,50 @@ class ApiService {
           status: response.status,
         };
       } else {
+        // Trata erros específicos baseados no status code e endpoint
+        let errorMessage = data.message || data.error || 'Erro desconhecido';
+        
+        // Se não há mensagem específica do servidor, usa mensagens padrão
+        if (!data.message && !data.error) {
+          switch (response.status) {
+            case 404:
+              errorMessage = endpoint.includes('/login') 
+                ? 'Usuário não encontrado. Verifique o CPF informado.'
+                : 'Recurso não encontrado';
+              break;
+            case 401:
+              errorMessage = 'Senha incorreta. Verifique suas credenciais.';
+              break;
+            case 400:
+              errorMessage = 'Dados inválidos. Verifique as informações inseridas.';
+              break;
+            case 403:
+              errorMessage = 'Acesso negado. Você não tem permissão para esta ação.';
+              break;
+            case 422:
+              errorMessage = 'Dados inválidos. Verifique o formato das informações.';
+              break;
+            case 500:
+              errorMessage = 'Erro interno do servidor. Tente novamente em alguns instantes.';
+              break;
+            case 502:
+            case 503:
+            case 504:
+              errorMessage = 'Servidor temporariamente indisponível. Tente novamente em alguns instantes.';
+              break;
+          }
+        }
+        
         return {
           success: false,
-          error: data.message || 'Erro desconhecido',
+          error: errorMessage,
           status: response.status,
         };
       }
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erro de conexão',
+        error: error instanceof Error ? error.message : 'Erro de conexão com o servidor. Verifique sua internet.',
         status: 0,
       };
     }
@@ -80,6 +114,14 @@ class ApiService {
     return this.makeRequest('/user/settings/change-info', {
       method: 'PUT',
       body: JSON.stringify(userData),
+    });
+  }
+
+  // Deletar usuário
+  async deleteUser(cpf: string): Promise<ApiResponse<{ message: string }>> {
+    return this.makeRequest('/user/delete', {
+      method: 'DELETE',
+      body: JSON.stringify({ cpf }),
     });
   }
 
@@ -192,6 +234,27 @@ class ApiService {
   // Buscar todos os grupos disponíveis
   async getGroups(): Promise<ApiResponse<{ grupos: { grupoID: number; nomeGrupo: string }[] }>> {
     return this.makeRequest<{ grupos: { grupoID: number; nomeGrupo: string }[] }>('/groups', {
+      method: 'GET',
+    });
+  }
+
+  // Buscar todos os usuários (apenas para admins)
+  async getAllUsers(): Promise<ApiResponse<{ usuarios: Array<{
+    usuarioID: number;
+    nomeCompleto: string;
+    cpf: string;
+    grupoID: number;
+    nomeGrupo: string;
+    adm: boolean;
+  }> }>> {
+    return this.makeRequest<{ usuarios: Array<{
+      usuarioID: number;
+      nomeCompleto: string;
+      cpf: string;
+      grupoID: number;
+      nomeGrupo: string;
+      adm: boolean;
+    }> }>('/users', {
       method: 'GET',
     });
   }

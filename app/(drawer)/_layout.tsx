@@ -3,13 +3,13 @@ import { router } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 import React, { useState } from "react";
 import {
-    Dimensions,
-    Modal,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Dimensions,
+  Modal,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -180,6 +180,27 @@ export default function DrawerLayout() {
             title: "Adicionar Usuário",
             drawerLabel: "Adicionar Usuário",
             drawerItemStyle: { display: "none" },
+          }}
+        />
+        <Drawer.Screen
+          name="editUser"
+          options={{
+            title: "Editar Usuário",
+            drawerLabel: "Editar Usuário",
+            drawerItemStyle: { display: "none" },
+            headerLeft: () => (
+              <TouchableOpacity 
+                onPress={() => router.back()}
+                style={{ marginLeft: 16, padding: 8 }}
+              >
+                <Icon 
+                  name="arrow-back" 
+                  size={24} 
+                  color="#fff" 
+                />
+              </TouchableOpacity>
+            ),
+            swipeEnabled: false,
           }}
         />
         <Drawer.Screen

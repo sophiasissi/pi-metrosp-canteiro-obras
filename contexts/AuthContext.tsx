@@ -9,6 +9,7 @@ interface AuthContextType {
   isAdmin: boolean;
   logout: () => void;
   login: (credentials: LoginRequest) => Promise<{ success: boolean; error?: string }>;
+  updateLoggedUser: (userData: Partial<LoggedUser>) => void;
   isLoading: boolean;
 }
 
@@ -23,6 +24,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = () => {
     setLoggedUser(null);
+  };
+
+  const updateLoggedUser = (userData: Partial<LoggedUser>) => {
+    if (loggedUser) {
+      setLoggedUser({ ...loggedUser, ...userData });
+    }
   };
 
   const login = async (credentials: LoginRequest): Promise<{ success: boolean; error?: string }> => {
@@ -52,15 +59,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setLoggedUser(user);
         return { success: true };
       } else {
+        // Passa a mensagem de erro específica do apiService
         return { 
           success: false, 
-          error: result.error || 'Erro desconhecido' 
+          error: result.error || 'Falha na autenticação. Verifique suas credenciais.' 
         };
       }
     } catch (error) {
+      console.error('Erro no AuthContext login:', error);
+      // Retorna uma mensagem mais específica para erro de conexão
       return { 
         success: false, 
-        error: 'Erro de conexão com o servidor' 
+        error: 'Erro de conexão com o servidor. Verifique sua internet e tente novamente.' 
       };
     } finally {
       setIsLoading(false);
@@ -75,6 +85,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       isAdmin,
       logout,
       login,
+      updateLoggedUser,
       isLoading,
     }}>
       {children}

@@ -1,20 +1,20 @@
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  useWindowDimensions,
-  ActivityIndicator,
+    ActivityIndicator,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+    useWindowDimensions
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
+import { CustomAlert } from "../../components/CustomAlert";
 import { useAuth } from "../../contexts/AuthContext";
 import { cleanCPF, formatCPF, validateCPF } from "../../utils/cpfValidator";
 
@@ -28,6 +28,23 @@ export default function LoginScreen() {
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [cpfError, setCpfError] = useState("");
   const [senhaError, setSenhaError] = useState("");
+  
+  // Estados para o alerta personalizado
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertType, setAlertType] = useState<'error' | 'warning' | 'info'>('error');
+
+  const showAlert = (title: string, message: string, type: 'error' | 'warning' | 'info' = 'error') => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setAlertType(type);
+    setAlertVisible(true);
+  };
+
+  const closeAlert = () => {
+    setAlertVisible(false);
+  };
 
   const handleCpfChange = (text: string) => {
     // Usa o formatador do utilitário
@@ -74,16 +91,61 @@ export default function LoginScreen() {
       return;
     }
 
-    // Chama a API do backend
-    const result = await login({
-      cpf: cleanCPF(cpf),
-      senha: senha
-    });
+    try {
+      // Chama a API do backend
+      const result = await login({
+        cpf: cleanCPF(cpf),
+        senha: senha
+      });
 
-    if (result.success) {
-      router.push("/(drawer)/home");
-    } else {
-      Alert.alert("Erro", result.error || "CPF ou senha inválidos");
+      if (result.success) {
+        router.push("/(drawer)/home");
+      } else {
+        // Determina o tipo de erro e exibe mensagem apropriada
+        const errorMessage = result.error || "Erro desconhecido";
+        
+        // Usa o alerta personalizado ao invés do Alert nativo
+        if (errorMessage.toLowerCase().includes('usuário não encontrado')) {
+          showAlert(
+            "Usuário não encontrado", 
+            "O CPF informado não está cadastrado no sistema. Verifique o CPF ou faça seu cadastro.",
+            'error'
+          );
+        } else if (errorMessage.toLowerCase().includes('senha incorreta')) {
+          showAlert(
+            "Senha incorreta", 
+            "A senha informada está incorreta. Verifique sua senha ou use a opção 'Esqueci minha senha'.",
+            'warning'
+          );
+        } else if (errorMessage.toLowerCase().includes('dados inválidos')) {
+          showAlert(
+            "Dados inválidos", 
+            "Verifique se o CPF e senha foram inseridos corretamente.",
+            'warning'
+          );
+        } else if (errorMessage.toLowerCase().includes('servidor')) {
+          showAlert(
+            "Problema no servidor", 
+            "Estamos enfrentando problemas técnicos. Tente novamente em alguns instantes.",
+            'error'
+          );
+        } else if (errorMessage.toLowerCase().includes('conexão')) {
+          showAlert(
+            "Problema de conexão", 
+            "Verifique sua conexão com a internet e tente novamente.",
+            'warning'
+          );
+        } else {
+          showAlert("Erro no login", errorMessage, 'error');
+        }
+      }
+    } catch (error) {
+      console.error('Erro no login:', error);
+      showAlert(
+        "Erro de conexão", 
+        "Não foi possível conectar ao servidor. Verifique sua conexão com a internet e tente novamente.",
+        'error'
+      );
     }
   };
 
@@ -182,6 +244,14 @@ export default function LoginScreen() {
         </View>
       </View>
     </ScrollView>
+    
+    <CustomAlert
+      visible={alertVisible}
+      title={alertTitle}
+      message={alertMessage}
+      type={alertType}
+      onClose={closeAlert}
+    />
   </KeyboardAvoidingView>
   );
 }

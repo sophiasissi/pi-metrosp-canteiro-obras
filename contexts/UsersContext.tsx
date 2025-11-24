@@ -9,6 +9,7 @@ interface UsersContextType {
   addUser: (userData: RegisterRequest) => Promise<boolean>;
   updateUser: (cpf: string, userData: any) => Promise<boolean>;
   getUserInfo: (cpf: string) => Promise<User | null>;
+  getAllUsers: () => Promise<void>;
   getAvailableGroups: () => string[];
   hasUsers: () => boolean;
 }
@@ -98,6 +99,31 @@ export const UsersProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
+  const getAllUsers = async (): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await apiService.getAllUsers();
+      if (result.success && result.data) {
+        const usersFromAPI: User[] = result.data.usuarios.map(user => ({
+          usuarioID: user.usuarioID,
+          nomeCompleto: user.nomeCompleto,
+          cpf: user.cpf,
+          grupoID: user.grupoID,
+          nomeGrupo: user.nomeGrupo,
+          adm: user.adm,
+        }));
+        setUsers(usersFromAPI);
+      } else {
+        setError(result.error || 'Erro ao buscar usuários');
+      }
+    } catch (err) {
+      setError('Erro de conexão');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const getAvailableGroups = (): string[] => {
     const userGroups = users.map(user => user.nomeGrupo).filter(Boolean);
     const uniqueGroups = Array.from(new Set(userGroups));
@@ -116,6 +142,7 @@ export const UsersProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       addUser,
       updateUser,
       getUserInfo,
+      getAllUsers,
       getAvailableGroups,
       hasUsers,
     }}>

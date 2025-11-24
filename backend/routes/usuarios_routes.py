@@ -167,3 +167,28 @@ def list_groups():
         return jsonify({'grupos': grupos_list}), 200
     except Exception as e:
         return jsonify({'error': 'Erro ao buscar grupos'}), 500
+
+@usuarios_bp.route('/users', methods=['GET'])
+def list_users():
+    """Retorna todos os usuários cadastrados no sistema (apenas para admins)"""
+    try:
+        # Busca todos os usuários
+        usuarios = Usuarios.query.all()
+        
+        usuarios_list = []
+        for usuario in usuarios:
+            # Para cada usuário, busca o grupo
+            grupo = Grupos.query.filter_by(grupoID=usuario.grupoID).first()
+            
+            usuarios_list.append({
+                'usuarioID': usuario.usuarioID,
+                'nomeCompleto': usuario.nomeCompleto,
+                'cpf': usuario.cpf,
+                'grupoID': usuario.grupoID,
+                'nomeGrupo': grupo.nomeGrupo if grupo else 'Sem grupo',
+                'adm': usuario.adm
+            })
+        
+        return jsonify({'usuarios': usuarios_list}), 200
+    except Exception as e:
+        return jsonify({'error': 'Erro ao buscar usuários', 'message': str(e)}), 500

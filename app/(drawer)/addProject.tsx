@@ -117,7 +117,16 @@ export default function AddProjectScreen() {
       for (let day = 1; day <= daysInMonth; day++) {
         const date = new Date(currentYear, currentMonth, day);
         const isToday = date.toDateString() === today.toDateString();
-        const isPast = date < today;
+        
+        // Normalizar datas para comparação (apenas data, sem hora)
+        const dateOnly = new Date(currentYear, currentMonth, day);
+        dateOnly.setHours(0, 0, 0, 0);
+        
+        const todayOnly = new Date(today);
+        todayOnly.setHours(0, 0, 0, 0);
+        
+        const isPast = dateOnly < todayOnly;
+        
         const isSelected = (startDate && date.toDateString() === startDate.toDateString()) ||
                           (endDate && date.toDateString() === endDate.toDateString());
         const isDisabled = isPast || (isEndDate && startDate && date <= startDate);
@@ -216,9 +225,10 @@ export default function AddProjectScreen() {
   const handleDateSelect = (selectedDate: Date) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    selectedDate.setHours(0, 0, 0, 0);
 
     if (selectedDate < today) {
-      Alert.alert('Data Inválida', 'Selecione uma data futura.');
+      Alert.alert('Data Inválida', 'Não é possível selecionar uma data no passado.');
       return;
     }
 
@@ -285,15 +295,20 @@ export default function AddProjectScreen() {
       setPeriodError("Data de fim é obrigatória");
       isValid = false;
     } else {
-
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      
+      const startDateCopy = new Date(startDate);
+      startDateCopy.setHours(0, 0, 0, 0);
+      
+      const endDateCopy = new Date(endDate);
+      endDateCopy.setHours(0, 0, 0, 0);
 
-      if (endDate <= startDate) {
+      if (endDateCopy <= startDateCopy) {
         setPeriodError("A data de fim deve ser posterior à data de início");
         isValid = false;
-      } else if (endDate <= today) {
-        setPeriodError("A data de fim deve ser uma data futura");
+      } else if (endDateCopy < today) {
+        setPeriodError("A data de fim não pode ser uma data no passado");
         isValid = false;
       } else {
         setPeriodError("");

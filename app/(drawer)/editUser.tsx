@@ -1,5 +1,5 @@
-import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Animated,
@@ -17,15 +17,25 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useAuth } from "../../contexts/AuthContext";
+import { useUsers } from "../../contexts/UsersContext";
 import { apiService } from "../../services/apiService";
-import { cleanCPF, formatCPF, validateCPF } from "../../utils/cpfValidator";
+import { cleanCPF, formatCPF } from "../../utils/cpfValidator";
 
-export default function SignUpScreen() {
+export default function EditUserScreen() {
   const { width } = useWindowDimensions();
   const isLargeScreen = width > 600;
-  const { loggedUser, isAdmin } = useAuth();
-
-  // Proteção: só permite acesso se for admin
+  const { loggedUser, isAdmin, updateLoggedUser } = useAuth();
+  const { getAllUsers } = useUsers();
+  const params = useLocalSearchParams();
+  
+  // Verifica se é um usuário editando seus próprios dados
+  const isCurrentUserEditing = params.userId === "current" || 
+    (loggedUser && (
+      params.userId === loggedUser.usuarioID?.toString() || 
+      params.userCpf === loggedUser.cpf
+    ));
+  
+  // Proteção de acesso
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!loggedUser) {
@@ -33,7 +43,7 @@ export default function SignUpScreen() {
         return;
       }
 
-      if (!isAdmin) {
+      if (!isAdmin && !isCurrentUserEditing) {
         Alert.alert(
           "Acesso Negado", 
           "Você não tem permissão para acessar esta tela.",
@@ -44,9 +54,46 @@ export default function SignUpScreen() {
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [loggedUser, isAdmin]);
+  }, [loggedUser, isAdmin, isCurrentUserEditing]);
+
+  // Limpar estado quando a tela recebe foco
+  useFocusEffect(
+    useCallback(() => {
+      console.log('Tela de edição recebeu foco - limpando estado');
+      setIsInitialized(false);
+      // Limpar todos os campos
+      setNome("");
+      setCpf("");
+      setSenha("");
+      setConfirmarSenha("");
+      setGrupo("");
+      setIsUserAdmin(false);
+      // Limpar erros
+      setNomeError("");
+      setSenhaError("");
+      setConfirmarSenhaError("");
+      setGrupoError("");
+      setShowSuccessModal(false);
+      setIsLoading(false);
+      setShowGrupoDropdown(false);
+    }, [])
+  );
   
-  // Não precisa carregar grupos - usuário criará novo grupo
+  // Carregar grupos disponíveis
+  useEffect(() => {
+    const loadGrupos = async () => {
+      try {
+        const result = await apiService.getGroups();
+        if (result.success && result.data) {
+          setGrupos(result.data.grupos);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar grupos:', error);
+      }
+    };
+    
+    loadGrupos();
+  }, []);
   
   // Estados do formulário
   const [nome, setNome] = useState("");
@@ -60,7 +107,6 @@ export default function SignUpScreen() {
   
   // Estados de erro
   const [nomeError, setNomeError] = useState("");
-  const [cpfError, setCpfError] = useState("");
   const [senhaError, setSenhaError] = useState("");
   const [confirmarSenhaError, setConfirmarSenhaError] = useState("");
   const [grupoError, setGrupoError] = useState("");
@@ -71,48 +117,97 @@ export default function SignUpScreen() {
   const [fadeAnim] = useState(new Animated.Value(0));
   const [scaleAnim] = useState(new Animated.Value(0.8));
   
-  // Estados para dropdown de grupos - removidos
-  // const [grupos, setGrupos] = useState<Array<{grupoID: number; nomeGrupo: string}>>([]);
-  // const [showGrupoDropdown, setShowGrupoDropdown] = useState(false);
+  // Estados para dropdown de grupos
+  const [grupos, setGrupos] = useState<Array<{grupoID: number; nomeGrupo: string}>>([]);
+  const [showGrupoDropdown, setShowGrupoDropdown] = useState(false);
 
-  // Handler para mudança do grupo
-  const handleGrupoChange = (text: string) => {
-    // Apenas letras minúsculas, sem espaços ou caracteres especiais
-    const grupoFormatado = text.toLowerCase().replace(/[^a-z]/g, '');
-    setGrupo(grupoFormatado);
-    if (grupoError) setGrupoError("");
+  // Estados para armazenar valores originais (para detectar mudanças)
+  const [originalValues, setOriginalValues] = useState({
+    nome: "",
+    cpf: "",
+    grupo: "",
+    isUserAdmin: false,
+  });
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Preenche os campos com os dados do usuário
+  useEffect(() => {
+    if (isInitialized) return;
+    
+    console.log('=== DEBUG EDIÇÃO ===');
+    console.log('params.userId:', params.userId);
+    console.log('params.userCpf:', params.userCpf);
+    console.log('params.userName:', params.userName);
+    console.log('loggedUser?.usuarioID:', loggedUser?.usuarioID);
+    console.log('loggedUser?.cpf:', loggedUser?.cpf);
+    console.log('isCurrentUserEditing:', isCurrentUserEditing);
+    console.log('isAdmin:', isAdmin);
+    console.log('========================');
+    
+    if (isCurrentUserEditing && loggedUser) {
+      // Editando usuário atual
+      const initialValues = {
+        nome: loggedUser.nomeCompleto || "",
+        cpf: formatCPF(loggedUser.cpf),
+        grupo: loggedUser.nomeGrupo || "",
+        isUserAdmin: loggedUser.adm || false,
+      };
+
+      setNome(initialValues.nome);
+      setCpf(initialValues.cpf);
+      setGrupo(initialValues.grupo);
+      setIsUserAdmin(initialValues.isUserAdmin);
+      setOriginalValues(initialValues);
+      setIsInitialized(true);
+    } else if (params.userName) {
+      // Editando outro usuário (só admin pode fazer isso)
+      const initialValues = {
+        nome: params.userName as string || "",
+        cpf: formatCPF(params.userCpf as string),
+        grupo: params.userGroup as string || "",
+        isUserAdmin: params.userIsAdmin === "true",
+      };
+
+      setNome(initialValues.nome);
+      setCpf(initialValues.cpf);
+      setGrupo(initialValues.grupo);
+      setIsUserAdmin(initialValues.isUserAdmin);
+      setOriginalValues(initialValues);
+      setIsInitialized(true);
+    }
+  }, [params, loggedUser, isCurrentUserEditing, isInitialized]);
+
+  // Função para verificar se houve mudanças nos dados
+  const hasDataChanged = () => {
+    const nomeChanged = nome.trim() !== originalValues.nome.trim();
+    const grupoChanged = grupo.trim() !== originalValues.grupo.trim();
+    const senhaChanged = senha.trim() !== "";
+    const adminChanged = !isCurrentUserEditing && (isUserAdmin !== originalValues.isUserAdmin);
+    
+    return nomeChanged || grupoChanged || senhaChanged || adminChanged;
+  };
+
+  // Função para obter o título da tela
+  const getScreenTitle = () => {
+    return isCurrentUserEditing ? "Editar Meus Dados" : "Editar Usuário";
+  };
+
+  // Função para cancelar e voltar
+  const handleCancel = () => {
+    router.back();
   };
 
   // Validação do nome
   const validateNome = (nome: string) => {
-    const nomeRegex = /^[A-Za-zÀ-ÿ\s]+$/;
-    return nomeRegex.test(nome);
+    // Aceita qualquer caractere, apenas verifica se não está vazio
+    return nome.trim().length > 0;
   };
 
   // Handlers de mudança
   const handleNomeChange = (text: string) => {
+    console.log('Nome alterado para:', text);
     setNome(text);
     if (nomeError) setNomeError("");
-  };
-
-  const handleCpfChange = (text: string) => {
-    const formattedCpf = formatCPF(text);
-    const cleanedCpf = cleanCPF(text);
-    
-    if (cleanedCpf.length <= 11) {
-      setCpf(formattedCpf);
-      
-      if (cleanedCpf.length === 11) {
-        const cpfValidation = validateCPF(formattedCpf);
-        if (!cpfValidation.isValid) {
-          setCpfError(cpfValidation.message || "CPF inválido");
-        } else {
-          setCpfError("");
-        }
-      } else {
-        if (cpfError) setCpfError("");
-      }
-    }
   };
 
   const handleSenhaChange = (text: string) => {
@@ -129,60 +224,42 @@ export default function SignUpScreen() {
   const validateFields = () => {
     let isValid = true;
 
+    // Valida nome (sempre obrigatório)
     if (!nome.trim()) {
       setNomeError("Nome é obrigatório");
       isValid = false;
     } else if (nome.trim().length < 2) {
       setNomeError("Nome deve ter pelo menos 2 caracteres");
       isValid = false;
-    } else if (!validateNome(nome)) {
-      setNomeError("Nome deve conter apenas letras e espaços");
-      isValid = false;
     } else {
       setNomeError("");
     }
 
-    if (!cpf.trim()) {
-      setCpfError("CPF é obrigatório");
-      isValid = false;
-    } else {
-      const cpfValidation = validateCPF(cpf);
-      if (!cpfValidation.isValid) {
-        setCpfError(cpfValidation.message || "CPF inválido");
+    // Valida grupo apenas se não for usuário comum editando seus próprios dados
+    if (!isCurrentUserEditing) {
+      if (!grupo.trim()) {
+        setGrupoError("Grupo é obrigatório");
         isValid = false;
       } else {
-        setCpfError("");
+        setGrupoError("");
       }
     }
 
-    if (!senha.trim()) {
-      setSenhaError("Senha é obrigatória");
-      isValid = false;
-    } else if (senha.length < 6) {
-      setSenhaError("Senha deve ter pelo menos 6 caracteres");
-      isValid = false;
-    } else {
-      setSenhaError("");
-    }
+    // Valida senhas apenas se foram preenchidas
+    if (senha.trim() !== "") {
+      if (senha.length < 6) {
+        setSenhaError("Senha deve ter pelo menos 6 caracteres");
+        isValid = false;
+      } else {
+        setSenhaError("");
+      }
 
-    if (!confirmarSenha.trim()) {
-      setConfirmarSenhaError("Confirmação de senha é obrigatória");
-      isValid = false;
-    } else if (confirmarSenha !== senha) {
-      setConfirmarSenhaError("As senhas não coincidem");
-      isValid = false;
-    } else {
-      setConfirmarSenhaError("");
-    }
-
-    if (!grupo.trim()) {
-      setGrupoError("Grupo é obrigatório");
-      isValid = false;
-    } else if (!/^[a-z]+$/.test(grupo)) {
-      setGrupoError("Grupo deve conter apenas letras minúsculas, sem espaços");
-      isValid = false;
-    } else {
-      setGrupoError("");
+      if (confirmarSenha !== senha) {
+        setConfirmarSenhaError("As senhas não coincidem");
+        isValid = false;
+      } else {
+        setConfirmarSenhaError("");
+      }
     }
 
     return isValid;
@@ -206,23 +283,6 @@ export default function SignUpScreen() {
     ]).start();
   };
 
-  // Limpar formulário
-  const clearForm = () => {
-    setNome("");
-    setCpf("");
-    setSenha("");
-    setConfirmarSenha("");
-    setGrupo("");
-    setIsUserAdmin(false);
-    setNomeError("");
-    setCpfError("");
-    setSenhaError("");
-    setConfirmarSenhaError("");
-    setGrupoError("");
-    setMostrarSenha(false);
-    setMostrarConfirmarSenha(false);
-  };
-
   // Fechar modal de sucesso
   const hideSuccessModal = () => {
     Animated.parallel([
@@ -238,12 +298,12 @@ export default function SignUpScreen() {
       }),
     ]).start(() => {
       setShowSuccessModal(false);
-      clearForm();
+      router.back();
     });
   };
 
-  // Função para cadastrar usuário
-  const handleSignUp = async () => {
+  // Função principal para atualizar usuário
+  const handleUpdateUser = async () => {
     if (!validateFields()) {
       return;
     }
@@ -251,23 +311,53 @@ export default function SignUpScreen() {
     setIsLoading(true);
 
     try {
-      const result = await apiService.register({
-        nomeCompleto: nome.trim(),
+      // Prepara os dados para envio
+      const userData: any = {
         cpf: cleanCPF(cpf),
-        senha: senha,
-        confirmarSenha: confirmarSenha,
+        nomeCompleto: nome.trim(),
         nomeGrupo: grupo.trim(),
-        adm: isUserAdmin
-      });
-
+      };
+      
+      // Só inclui adm se não for usuário comum editando seus próprios dados
+      if (!isCurrentUserEditing) {
+        userData.adm = isUserAdmin;
+      }
+      
+      // Só inclui senha se foi alterada
+      if (senha.trim() !== "") {
+        userData.senha = senha;
+        userData.confirmarSenha = confirmarSenha;
+      }
+      
+      console.log('Enviando dados para API:', userData);
+      
+      const result = await apiService.updateUserInfo(userData);
+      
       if (result.success) {
+        // Se é o usuário atual editando seus próprios dados, atualiza o contexto de auth
+        if (isCurrentUserEditing) {
+          updateLoggedUser({
+            nomeCompleto: nome.trim(),
+            nomeGrupo: grupo.trim(),
+          });
+        }
+        
+        // Se é admin editando outro usuário, força reload da lista de usuários
+        if (isAdmin && !isCurrentUserEditing) {
+          try {
+            await getAllUsers();
+          } catch (error) {
+            console.log('Erro ao recarregar usuários:', error);
+          }
+        }
+        
         showSuccessModalWithAnimation();
       } else {
-        Alert.alert("Erro", result.error || "Erro ao cadastrar usuário");
+        Alert.alert("Erro", result.error || "Erro ao atualizar dados do usuário");
       }
     } catch (err) {
+      console.error('Erro na atualização:', err);
       Alert.alert("Erro", "Erro de conexão com o servidor");
-      console.error("Erro no cadastro:", err);
     } finally {
       setIsLoading(false);
     }
@@ -311,7 +401,7 @@ export default function SignUpScreen() {
             <Text style={styles.modalTitle}>Sucesso!</Text>
 
             <Text style={styles.modalMessage}>
-              Cadastro realizado com sucesso como {userType}!
+              Dados atualizados com sucesso!
             </Text>
 
             <TouchableOpacity
@@ -354,7 +444,7 @@ export default function SignUpScreen() {
               style={[styles.logo, isLargeScreen && styles.logoLarge]}
             />
 
-            <Text style={styles.title}>Adicionar Usuário</Text>
+            <Text style={styles.title}>{getScreenTitle()}</Text>
 
             <View style={styles.fieldContainer}>
               <Text style={styles.label}>Nome Completo:</Text>
@@ -369,6 +459,9 @@ export default function SignUpScreen() {
                 value={nome}
                 onChangeText={handleNomeChange}
                 editable={true}
+                autoCorrect={false}
+                autoCapitalize="words"
+                returnKeyType="next"
               />
               {nomeError ? <Text style={styles.errorText}>{nomeError}</Text> : null}
             </View>
@@ -379,20 +472,17 @@ export default function SignUpScreen() {
                 style={[
                   styles.input,
                   isLargeScreen && styles.inputLarge,
-                  cpfError ? styles.inputError : null,
+                  styles.inputDisabled,
                 ]}
-                placeholder="Digite o CPF"
+                placeholder="CPF do usuário"
                 placeholderTextColor="#B0B0B0"
-                keyboardType="numeric"
                 value={cpf}
-                onChangeText={handleCpfChange}
-                maxLength={14} // XXX.XXX.XXX-XX
+                editable={false}
               />
-              {cpfError ? <Text style={styles.errorText}>{cpfError}</Text> : null}
             </View>
 
             <View style={styles.fieldContainer}>
-              <Text style={styles.label}>Senha:</Text>
+              <Text style={styles.label}>Nova Senha (opcional):</Text>
               <View style={styles.passwordContainer}>
                 <TextInput
                   style={[
@@ -400,7 +490,7 @@ export default function SignUpScreen() {
                     isLargeScreen && styles.inputLarge,
                     senhaError ? styles.inputError : null,
                   ]}
-                  placeholder="Digite sua senha"
+                  placeholder="Digite a nova senha (deixe em branco para não alterar)"
                   placeholderTextColor="#B0B0B0"
                   secureTextEntry={!mostrarSenha}
                   value={senha}
@@ -421,7 +511,7 @@ export default function SignUpScreen() {
             </View>
 
             <View style={styles.fieldContainer}>
-              <Text style={styles.label}>Confirmar Senha:</Text>
+              <Text style={styles.label}>Confirmar Nova Senha:</Text>
               <View style={styles.passwordContainer}>
                 <TextInput
                   style={[
@@ -429,7 +519,7 @@ export default function SignUpScreen() {
                     isLargeScreen && styles.inputLarge,
                     confirmarSenhaError ? styles.inputError : null,
                   ]}
-                  placeholder="Confirme sua senha"
+                  placeholder="Confirme a nova senha"
                   placeholderTextColor="#B0B0B0"
                   secureTextEntry={!mostrarConfirmarSenha}
                   value={confirmarSenha}
@@ -451,57 +541,119 @@ export default function SignUpScreen() {
               ) : null}
             </View>
 
-            <View style={styles.fieldContainer}>
+            <View style={[
+              styles.fieldContainer, 
+              showGrupoDropdown && { zIndex: 99999, elevation: 20 }
+            ]}>
               <Text style={styles.label}>Grupo:</Text>
-              <TextInput
+              <TouchableOpacity
                 style={[
                   styles.input,
+                  styles.dropdownButton,
                   isLargeScreen && styles.inputLarge,
                   grupoError ? styles.inputError : null,
+                  isCurrentUserEditing && styles.inputDisabled,
                 ]}
-                placeholder="Digite o nome do grupo (apenas letras minúsculas)"
-                placeholderTextColor="#B0B0B0"
-                value={grupo}
-                onChangeText={handleGrupoChange}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
+                onPress={isCurrentUserEditing ? undefined : () => setShowGrupoDropdown(!showGrupoDropdown)}
+                disabled={!!isCurrentUserEditing}
+              >
+                <Text style={[
+                  styles.dropdownButtonText,
+                  !grupo && { color: '#B0B0B0' },
+                  isCurrentUserEditing && { color: '#999' }
+                ]}>
+                  {grupo || "Selecione um grupo"}
+                </Text>
+                {!isCurrentUserEditing && (
+                  <Icon
+                    name={showGrupoDropdown ? "chevron-up" : "chevron-down"}
+                    size={16}
+                    color="#666"
+                  />
+                )}
+              </TouchableOpacity>
+              
+              {showGrupoDropdown && !isCurrentUserEditing && (
+                <View style={styles.dropdownContainer}>
+                  {grupos.map((grupoItem) => (
+                    <TouchableOpacity
+                      key={grupoItem.grupoID}
+                      style={styles.dropdownItem}
+                      onPress={() => {
+                        setGrupo(grupoItem.nomeGrupo);
+                        setShowGrupoDropdown(false);
+                        setGrupoError("");
+                      }}
+                    >
+                      <Text style={styles.dropdownItemText}>{grupoItem.nomeGrupo}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
               
               {grupoError ? <Text style={styles.errorText}>{grupoError}</Text> : null}
             </View>
 
-            {/* Checkbox de Administrador */}
-            <View style={styles.checkboxContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.checkbox,
-                  isUserAdmin && { backgroundColor: "#001489" }
-                ]}
-                onPress={() => setIsUserAdmin(!isUserAdmin)}
-              >
-                {isUserAdmin && (
-                  <Icon
-                    name="check"
-                    size={14}
-                    color="#fff"
-                  />
-                )}
-              </TouchableOpacity>
-              <Text style={styles.checkboxLabel}>
-                Administrador
-              </Text>
-            </View>
+            {/* Checkbox de Administrador - só aparece quando admin está editando OUTRO usuário E o usuário sendo editado já é admin */}
+            {/* DEBUG: isAdmin={isAdmin}, isCurrentUserEditing={isCurrentUserEditing}, originalValues.isUserAdmin={originalValues.isUserAdmin} */}
+            {isAdmin && !isCurrentUserEditing && originalValues.isUserAdmin && (
+              <View style={styles.checkboxContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.checkbox,
+                    isUserAdmin && { backgroundColor: "#001489" }
+                  ]}
+                  onPress={() => setIsUserAdmin(!isUserAdmin)}
+                >
+                  {isUserAdmin && (
+                    <Icon
+                      name="check"
+                      size={14}
+                      color="#fff"
+                    />
+                  )}
+                </TouchableOpacity>
+                <Text style={styles.checkboxLabel}>
+                  Administrador
+                </Text>
+              </View>
+            )}
             
-            {/* Botão de cadastro */}
-            <TouchableOpacity 
-              style={[styles.signUpButton, isLoading && styles.buttonDisabled]} 
-              onPress={handleSignUp}
-              disabled={isLoading}
-            >
-              <Text style={styles.signUpButtonText}>
-                {isLoading ? "CADASTRANDO..." : "CADASTRAR"}
-              </Text>
-            </TouchableOpacity>
+            {/* Overlay para fechar dropdown quando tocar fora */}
+            {showGrupoDropdown && !isCurrentUserEditing && (
+              <TouchableOpacity
+                style={styles.dropdownBackdrop}
+                activeOpacity={1}
+                onPress={() => setShowGrupoDropdown(false)}
+              />
+            )}
+
+            {/* Botões de ação */}
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity 
+                style={[
+                  styles.updateButton,
+                  (!hasDataChanged() || isLoading) && styles.buttonDisabled
+                ]} 
+                onPress={handleUpdateUser}
+                disabled={!hasDataChanged() || isLoading}
+              >
+                <Text style={[
+                  styles.updateButtonText,
+                  (!hasDataChanged() || isLoading) && styles.buttonTextDisabled
+                ]}>
+                  {isLoading ? "ATUALIZANDO..." : "ATUALIZAR"}
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.cancelButton} 
+                onPress={handleCancel}
+                disabled={isLoading}
+              >
+                <Text style={styles.cancelButtonText}>CANCELAR</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -598,7 +750,7 @@ const styles = StyleSheet.create({
     right: 15,
     top: 15,
   },
-  signUpButton: {
+  updateButton: {
     width: "80%",
     height: 50,
     backgroundColor: "#001489",
@@ -612,21 +764,9 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  signUpButtonText: {
+  updateButtonText: {
     color: "#fff",
     fontSize: 18,
-    fontWeight: "bold",
-  },
-  loginLink: {
-    marginTop: 20,
-    alignItems: "center",
-  },
-  loginLinkText: {
-    color: "#666",
-    fontSize: 14,
-  },
-  loginLinkBold: {
-    color: "#001489",
     fontWeight: "bold",
   },
   inputError: {
@@ -769,7 +909,41 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
   },
+  inputDisabled: {
+    backgroundColor: "#f5f5f5",
+    color: "#999",
+  },
+  
+  buttonContainer: {
+    width: "100%",
+    marginTop: 10,
+    alignItems: "center",
+  },
   buttonDisabled: {
     opacity: 0.5,
+  },
+  buttonTextDisabled: {
+    opacity: 0.5,
+  },
+  cancelButton: {
+    backgroundColor: "transparent",
+    borderWidth: 2,
+    borderColor: "#001489",
+    width: "80%",
+    height: 50,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  cancelButtonText: {
+    color: "#001489",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
