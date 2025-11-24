@@ -51,11 +51,9 @@ class Projetos(db.Model):
 
 class ImagensProgresso(db.Model):
     __tablename__ = 'imagens_progresso'
-
     imagemID = db.Column(db.Integer, primary_key=True, autoincrement=True)
     projetoID = db.Column(db.Integer, db.ForeignKey('projeto.projetoID', ondelete='CASCADE'), nullable=False)
+    porcentagem = db.Column(db.Integer, nullable=False)
     dataEnvio = db.Column(db.DateTime)
-    descricao = db.Column(db.String(255))
     caminhoImagem = db.Column(db.String(255), nullable=False)
-
     projeto = db.relationship('Projetos', backref='imagens_progresso')
