@@ -1,25 +1,31 @@
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  FlatList,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  useWindowDimensions,
+    FlatList,
+    Image,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+    useWindowDimensions,
 } from "react-native";
+import Icon from "react-native-vector-icons/MaterialIcons";
 import ImageModal from "../../components/ImageModal";
 import { Project, useProjects } from "../../contexts/ProjectContext";
 
 export default function HomeScreen() {
   const { width } = useWindowDimensions();
   const isLargeScreen = width > 600;
-  const { projects } = useProjects();
+  const { projects, deleteProject } = useProjects();
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
 
   const handleImagePress = (imageUri: string | null) => {
     if (!imageUri) return;
@@ -29,6 +35,24 @@ export default function HomeScreen() {
 
   const handleNewProject = () => {
     router.push("/(drawer)/addProject");
+  };
+
+  const handleProjectOptions = (project: Project) => {
+    setProjectToDelete(project);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (projectToDelete) {
+      deleteProject(projectToDelete.id);
+      setShowDeleteModal(false);
+      setProjectToDelete(null);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setProjectToDelete(null);
   };
 
   const getProjectColor = (progress: number) => {
@@ -106,7 +130,16 @@ export default function HomeScreen() {
           style={styles.projectDetails}
           onPress={() => handleProjectPress(item.id)}
         >
-          <Text style={styles.projectName}>{item.name}</Text>
+          <View style={styles.projectHeader}>
+            <Text style={styles.projectName}>{item.name}</Text>
+            <TouchableOpacity
+              style={styles.projectOptionsButton}
+              onPress={() => handleProjectOptions(item)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Icon name="more-vert" size={20} color="#666" />
+            </TouchableOpacity>
+          </View>
           <View style={styles.progressContainer}>
             <Text style={styles.progressLabel}>Progresso</Text>
             <Text 
@@ -182,6 +215,58 @@ export default function HomeScreen() {
         imageUri={selectedImage}
         onClose={() => setModalVisible(false)}
       />
+
+      {/* 🗑️ Modal de Confirmação de Exclusão */}
+      <Modal
+        visible={showDeleteModal}
+        animationType="fade"
+        transparent={true}
+        statusBarTranslucent={true}
+        onRequestClose={handleCancelDelete}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={handleCancelDelete}
+        >
+          <KeyboardAvoidingView
+            style={styles.modalOverlayInner}
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+          >
+            <TouchableOpacity
+              style={styles.modalContainer}
+              activeOpacity={1}
+              onPress={(e) => e.stopPropagation()}
+            >
+              <Text style={styles.modalTitle}>Confirmar Exclusão</Text>
+
+              <View style={styles.deleteWarning}>
+                <Text style={styles.deleteWarningIcon}>⚠️</Text>
+                <Text style={styles.deleteMessage}>
+                  Tem certeza que deseja deletar o projeto "{projectToDelete?.name}"?
+                  {"\n\n"}Esta ação não pode ser desfeita.
+                </Text>
+              </View>
+
+              <View style={styles.modalButtonsRow}>
+                <TouchableOpacity
+                  style={[styles.deleteButton, styles.modalButton]}
+                  onPress={handleConfirmDelete}
+                >
+                  <Text style={styles.deleteButtonText}>Deletar</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.cancelButton, styles.modalButton]}
+                  onPress={handleCancelDelete}
+                >
+                  <Text style={styles.cancelButtonText}>Cancelar</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </KeyboardAvoidingView>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -261,7 +346,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     color: "#000",
-    marginBottom: 10,
+    flex: 1,
+    marginRight: 8,
   },
   progressContainer: {
     flexDirection: "row",
@@ -279,4 +365,99 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   progressBarFill: { height: "100%", borderRadius: 4 },
+  
+  // 🎯 NOVOS ESTILOS PARA MENU DE TRÊS PONTOS E MODAL
+  projectHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 10,
+  },
+  projectOptionsButton: {
+    padding: 4,
+    borderRadius: 12,
+    backgroundColor: "#F5F5F5",
+    marginLeft: 8,
+  },
+  
+  // 🗑️ ESTILOS DO MODAL DE CONFIRMAÇÃO
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalOverlayInner: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContainer: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 24,
+    width: "90%",
+    maxWidth: 400,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#001489",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  deleteWarning: {
+    alignItems: "center",
+    marginBottom: 25,
+  },
+  deleteWarningIcon: {
+    fontSize: 48,
+    marginBottom: 15,
+  },
+  deleteMessage: {
+    fontSize: 16,
+    color: "#333",
+    textAlign: "center",
+    lineHeight: 22,
+  },
+  modalButtonsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 15,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 48,
+  },
+  deleteButton: {
+    backgroundColor: "#E74C3C",
+  },
+  deleteButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  cancelButton: {
+    backgroundColor: "#F0F0F0",
+    borderWidth: 1,
+    borderColor: "#CFCFCF",
+  },
+  cancelButtonText: {
+    color: "#666",
+    fontSize: 16,
+    fontWeight: "600",
+  },
 });

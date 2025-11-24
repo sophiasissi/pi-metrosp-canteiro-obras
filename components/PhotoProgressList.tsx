@@ -110,7 +110,30 @@ export default function PhotoProgressList({ projectId }: PhotoProgressListProps)
 
       <View style={styles.progressInfo}>
         <Text style={styles.imageName}>{item.imageNumber}</Text>
-        <Text style={styles.dateText}>Data: {item.date}</Text>
+        {item.id === 'initial' ? (
+          // 📅 PLANTA BAIXA: Mostra data de criação
+          <Text style={styles.dateText}>Data: {item.date}</Text>
+        ) : (
+          // 📊 FOTOS DE PROGRESSO: Mostra progresso individual
+          <>
+            <Text style={[styles.progressText, { color: getProgressColor(item.progress || 0) }]}>
+              Progresso: {item.progress || 0}%
+            </Text>
+            <View style={styles.individualProgressBar}>
+              <View style={styles.individualProgressBackground}>
+                <View 
+                  style={[
+                    styles.individualProgressFill, 
+                    { 
+                      width: `${item.progress || 0}%`,
+                      backgroundColor: getProgressColor(item.progress || 0)
+                    }
+                  ]} 
+                />
+              </View>
+            </View>
+          </>
+        )}
       </View>
     </View>
   );
@@ -196,7 +219,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#333",
-    marginBottom: 5,
+    marginBottom: 8,
   },
   imageName: {
     fontSize: 14,
@@ -207,5 +230,19 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 12,
     color: "#666",
+  },
+  // 🎯 NOVOS ESTILOS PARA PROGRESSO INDIVIDUAL
+  individualProgressBar: {
+    marginTop: 5,
+  },
+  individualProgressBackground: {
+    height: 6,
+    backgroundColor: "#E0E0E0",
+    borderRadius: 3,
+    overflow: "hidden",
+  },
+  individualProgressFill: {
+    height: "100%",
+    borderRadius: 3,
   },
 });
