@@ -17,12 +17,14 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useAuth } from "../../contexts/AuthContext";
+import { useProjects } from "../../contexts/ProjectContext";
 import { apiService } from "../../services/apiService";
 
 export default function AddProjectScreen() {
   const { width } = useWindowDimensions();
   const isLargeScreen = width > 600;
   const { loggedUser } = useAuth();
+  const { refreshProjects } = useProjects();
 
   const [projectName, setProjectName] = useState("");
   const [location, setLocation] = useState("");
@@ -441,17 +443,36 @@ export default function AddProjectScreen() {
       formData.append('nomeGrupo', group.trim());
 
       if (projectImage) {
-        // Criar objeto File da imagem
-        const response = await fetch(projectImage);
-        const blob = await response.blob();
-        const file = new File([blob], 'project-image.jpg', { type: 'image/jpeg' });
-        formData.append('imagemInicial', file);
+        // Diferenciar envio entre web e React Native
+        if (Platform.OS === 'web') {
+          // Web: usar File
+          const response = await fetch(projectImage);
+          const blob = await response.blob();
+          const file = new File([blob], 'project-image.jpg', { type: 'image/jpeg' });
+          formData.append('imagemInicial', file);
+        } else {
+          // React Native (Android/iOS/Expo): anexar objeto com uri/nome/tipo
+          // FormData em RN espera este formato ao enviar arquivos
+          // @ts-ignore - FormData type in React Native can vary
+          formData.append('imagemInicial', {
+            uri: projectImage,
+            name: 'project-image.jpg',
+            type: 'image/jpeg',
+          } as any);
+        }
       }
 
       const result = await apiService.addProject(formData);
 
       if (result.success) {
         Alert.alert("Sucesso!", result.data?.message || "Projeto criado com sucesso!");
+        // Atualiza lista de projetos no contexto e volta para a home
+        try {
+          // passar o nome do grupo selecionado para garantir que o refresh traga os projetos corretos
+          await refreshProjects(group.trim());
+        } catch (e) {
+          console.warn('refreshProjects falhou', e);
+        }
         router.replace("/(drawer)/home");
       } else {
         Alert.alert("Erro", result.error || "Não foi possível criar o projeto.");

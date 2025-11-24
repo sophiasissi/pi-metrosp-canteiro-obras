@@ -1,4 +1,4 @@
-import React, { createContext, ReactNode, useContext, useState } from 'react';
+import React, { createContext, ReactNode, useContext, useState, useEffect } from 'react';
 import { apiService } from '../services/apiService';
 import type { ProgressImage, Project } from '../types/api';
 
@@ -14,7 +14,8 @@ interface ProjectContextType {
   deleteProject: (projetoID: number) => Promise<boolean>;
   getProject: (projetoID: number) => Promise<Project | null>;
   addProgressEntry: (projetoID: number, formData: FormData) => Promise<{ success: boolean; porcentagem?: number; error?: string }>;
-  refreshProjects: () => void;
+  removeProgressImage: (projetoID: number, imagemID: number) => Promise<{ success: boolean; error?: string }>;
+  refreshProjects: (nomeGrupo?: string) => Promise<any>;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -42,7 +43,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     try {
       const result = await apiService.addProject(formData);
       if (result.success) {
-        refreshProjects();
+        await refreshProjects();
         return true;
       } else {
         setError(result.error || 'Erro ao adicionar projeto');
@@ -106,7 +107,9 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     try {
       const result = await apiService.getProject(projetoID);
       if (result.success && result.data) {
-        return result.data;
+        // normalize the returned project
+        const normalized = normalizeProject(result.data);
+        return normalized;
       } else {
         setError(result.error || 'Projeto não encontrado');
         return null;
@@ -125,18 +128,31 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     try {
       const result = await apiService.uploadProgressImage(projetoID, formData);
       if (result.success) {
-        // Atualizar o projeto local com a nova imagem de progresso
-        const updatedProject = await getProject(projetoID);
-        if (updatedProject) {
+        console.log('addProgressEntry: upload result', result);
+        // Se o backend retornou o projeto atualizado, usá-lo diretamente
+        const projetoRetornado = result.data?.projeto ?? result.data;
+        if (projetoRetornado) {
+          const normalized = normalizeProject(projetoRetornado);
           setProjects(prev =>
             prev.map(project =>
-              project.projetoID === projetoID ? updatedProject : project
+              project.projetoID === projetoID ? normalized : project
             )
           );
+        } else {
+          // fallback: buscar o projeto
+          const updatedProject = await getProject(projetoID);
+          if (updatedProject) {
+            setProjects(prev =>
+              prev.map(project =>
+                project.projetoID === projetoID ? updatedProject : project
+              )
+            );
+          }
         }
-        return { 
-          success: true, 
-          porcentagem: result.data?.porcentagem 
+
+        return {
+          success: true,
+          porcentagem: result.data?.porcentagem
         };
       } else {
         const errorMsg = result.error || 'Erro ao adicionar progresso';
@@ -152,11 +168,100 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     }
   };
 
-  const refreshProjects = () => {
-    // Implementar quando houver endpoint para listar projetos
-    // Por enquanto, mantém a lista existente
-    console.log('refreshProjects: Funcionalidade a ser implementada');
+  const removeProgressImage = async (projetoID: number, imagemID: number): Promise<{ success: boolean; error?: string }> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await apiService.removeProgressImage(imagemID);
+      if (result.success) {
+        // Atualiza o projeto no state buscando o projeto atualizado
+        const updated = await getProject(projetoID);
+        if (updated) {
+          setProjects(prev => prev.map(p => p.projetoID === projetoID ? updated : p));
+        }
+        return { success: true };
+      } else {
+        const errMsg = result.error || 'Erro ao deletar imagem';
+        setError(errMsg);
+        return { success: false, error: errMsg };
+      }
+    } catch (err) {
+      const errMsg = 'Erro de conexão';
+      setError(errMsg);
+      return { success: false, error: errMsg };
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const refreshProjects = (nomeGrupo?: string) => {
+    setIsLoading(true);
+    setError(null);
+    // Retorna a promise para que chamadores possam await
+    return apiService.getProjects(nomeGrupo)
+      .then(result => {
+        if (result.success && result.data) {
+          // normalize projects list
+          const normalizedList = (result.data.projetos || []).map((p: any) => normalizeProject(p));
+          setProjects(normalizedList);
+        } else {
+          setError(result.error || 'Erro ao buscar projetos');
+        }
+        return result;
+      })
+      .catch((err) => {
+        setError('Erro de conexão');
+        return { success: false, error: 'Erro de conexão', status: 0 } as any;
+      })
+      .finally(() => setIsLoading(false));
+  };
+
+  useEffect(() => {
+    // Carrega projetos ao montar o provider
+    refreshProjects();
+  }, []);
+
+  // Normaliza o objeto do projeto vindo do backend para uma forma consistente usada pelo frontend
+  function normalizeProject(p: any) {
+    if (!p) return p;
+
+    const projetoID = p.projetoID ?? (p.id ? Number(p.id) : undefined);
+    const imagensProgresso = (p.imagensProgresso || []).map((img: any) => ({
+      imagemID: img.imagemID ?? (img.id ? Number(img.id) : undefined),
+      caminhoImagem: img.caminhoImagem ?? img.image,
+      porcentagem: img.porcentagem ?? img.progress ?? 0,
+      dataEnvio: img.dataEnvio ?? img.createdAt ?? null,
+    }));
+
+    const progressHistory = (p.progressHistory || imagensProgresso.map((img: any) => ({
+      id: String(img.imagemID),
+      image: img.caminhoImagem,
+      progress: img.porcentagem,
+      createdAt: img.dataEnvio,
+    })));
+
+    const max_progress = imagensProgresso.length > 0 ? Math.max(...imagensProgresso.map((i: any) => i.porcentagem || 0)) : 0;
+
+    return {
+      projetoID: projetoID,
+      nomeProjeto: p.nomeProjeto ?? p.name,
+      localizacao: p.localizacao ?? p.location,
+      dataInicio: p.dataInicio ?? null,
+      dataFim: p.dataFim ?? null,
+      imagemInicial: p.imagemInicial ?? p.image,
+      imagensProgresso: imagensProgresso,
+      // compat
+      id: projetoID ? String(projetoID) : undefined,
+      name: p.name ?? p.nomeProjeto,
+      location: p.location ?? p.localizacao,
+      period: p.period ?? `${p.dataInicio ?? ''} - ${p.dataFim ?? ''}`,
+      group: p.group ?? (p.grupo ? p.grupo.nomeGrupo : undefined),
+      progress: p.progress ?? max_progress,
+      image: p.image ?? p.imagemInicial,
+      progressHistory: progressHistory,
+      createdAt: p.createdAt ?? p.dataInicio,
+    } as any;
+  }
 
   return (
     <ProjectContext.Provider value={{ 
@@ -168,6 +273,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       deleteProject, 
       getProject,
       addProgressEntry,
+      removeProgressImage,
       refreshProjects 
     }}>
       {children}

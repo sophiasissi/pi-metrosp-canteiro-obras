@@ -19,7 +19,9 @@ export default function ProjectDetailsScreen() {
   const { projects } = useProjects();
   const [modalVisible, setModalVisible] = useState(false);
 
-  const project = projects.find(p => p.id === projectId);
+  // projectId comes from route params as string; projects store id as string or projetoID as number
+  const pid = projectId ? String(projectId) : undefined;
+  const project = projects.find(p => (p.id && p.id === pid) || (p.projetoID && String(p.projetoID) === pid));
 
   if (!project) {
     return (
@@ -38,33 +40,33 @@ export default function ProjectDetailsScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {}
         <View style={styles.header}>
-          <Text style={styles.projectName}>{project.name}</Text>
+          <Text style={styles.projectName}>{project.name || project.nomeProjeto}</Text>
           <View style={styles.divider} />
         </View>
 
         {}
         <View style={styles.projectInfo}>
           <Text style={styles.infoText}>
-            <Text style={styles.infoLabel}>Período de Tempo:</Text> {project.period}
+            <Text style={styles.infoLabel}>Período de Tempo:</Text> {project.period || `${project.dataInicio} - ${project.dataFim}`}
           </Text>
           <Text style={styles.infoText}>
-            <Text style={styles.infoLabel}>Localização:</Text> {project.location}
+            <Text style={styles.infoLabel}>Localização:</Text> {project.location || project.localizacao}
           </Text>
           <Text style={styles.infoText}>
-            <Text style={styles.infoLabel}>Grupo:</Text> {project.group}
+            <Text style={styles.infoLabel}>Grupo:</Text> {project.group || ''}
           </Text>
           
           {}
           <View style={styles.progressSection}>
             <Text style={styles.infoText}>
-              <Text style={styles.infoLabel}>Progresso:</Text> {project.progress}%
+              <Text style={styles.infoLabel}>Progresso:</Text> {project.progress ?? 0}%
             </Text>
             <View style={styles.progressBarContainer}>
               <View style={styles.progressBarBackground}>
                 <View 
                   style={[
                     styles.progressBarFill, 
-                    { width: `${project.progress}%` }
+                    { width: `${project.progress ?? 0}%` }
                   ]} 
                 />
               </View>
@@ -90,14 +92,14 @@ export default function ProjectDetailsScreen() {
         </View>
 
         {}
-        <PhotoProgressList projectId={project.id} />
+  <PhotoProgressList projectId={project.id ?? String(project.projetoID)} />
       </ScrollView>
 
       {}
       <AddProgressModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
-        projectId={project.id}
+        projectId={project.id ?? String(project.projetoID)}
       />
     </View>
   );

@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import {
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Alert,
 } from "react-native";
 import { useProjects } from "../contexts/ProjectContext";
 import ImageModal from "./ImageModal"; // ✅ importando o modal reutilizável
@@ -22,23 +23,34 @@ interface PhotoProgress {
 }
 
 export default function PhotoProgressList({ projectId }: PhotoProgressListProps) {
-  const { projects } = useProjects();
+  const { projects, removeProgressImage } = useProjects();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
-  const project = projects.find(p => p.id === projectId);
+  const project = projects.find(p => p.id === projectId || String(p.projetoID) === String(projectId));
   const photoProgress: PhotoProgress[] = [];
+
+  const formatDate = (d?: string | Date | null) => {
+    if (!d) return '';
+    try {
+      const dateObj = typeof d === 'string' ? new Date(d) : d;
+      if (!dateObj || isNaN((dateObj as Date).getTime())) return String(d);
+      return (dateObj as Date).toLocaleDateString('pt-BR');
+    } catch {
+      return String(d);
+    }
+  };
 
   if (project?.progressHistory) {
     const totalImages = project.progressHistory.length;
     const sortedHistory = [...project.progressHistory].reverse();
-    
+
     sortedHistory.forEach((entry, index) => {
       photoProgress.push({
         id: entry.id,
         imageNumber: `Imagem ${totalImages - index}`,
         progress: entry.progress,
-        date: entry.createdAt.toLocaleDateString('pt-BR'),
+        date: formatDate(entry.createdAt),
         image: entry.image,
       });
     });
@@ -49,12 +61,14 @@ export default function PhotoProgressList({ projectId }: PhotoProgressListProps)
       id: 'initial',
       imageNumber: 'Planta Baixa',
       progress: 0,
-      date: project.createdAt.toLocaleDateString('pt-BR'),
+      date: formatDate(project.createdAt),
       image: project.image,
     });
   }
 
   if (photoProgress.length === 0) {
+    console.log('PhotoProgressList: project', project);
+    console.log('PhotoProgressList: photoProgress length', photoProgress.length);
     return (
       <View style={styles.container}>
         <View style={styles.emptyState}>
@@ -108,9 +122,54 @@ export default function PhotoProgressList({ projectId }: PhotoProgressListProps)
         )}
       </TouchableOpacity>
 
+      {/* Delete button for each progress image */}
+      {item.id !== 'initial' && (
+        <TouchableOpacity
+          style={styles.deleteImageButton}
+          onPress={() => {
+            Alert.alert(
+              'Confirmar',
+              'Deseja excluir esta imagem de progresso?',
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                { text: 'Excluir', style: 'destructive', onPress: async () => {
+                    const imgIdNum = Number(item.id);
+                    const projIdNum = Number(projectId);
+                    await removeProgressImage(projIdNum, imgIdNum);
+                    // Optionally you can handle res.success here
+                  }
+                }
+              ]
+            );
+          }}
+        >
+          <Text style={styles.deleteText}>✕</Text>
+        </TouchableOpacity>
+      )}
+
       <View style={styles.progressInfo}>
         <Text style={styles.imageName}>{item.imageNumber}</Text>
         <Text style={styles.dateText}>Data: {item.date}</Text>
+        {/* Progress bar for this specific image */}
+        <View style={styles.singleProgressSection}>
+          <View style={styles.progressRow}>
+            <Text style={styles.progressLabel}>Progresso</Text>
+            <Text style={[styles.progressPercent, { color: getProgressColor(item.progress || 0) }]}>{item.progress ?? 0}%</Text>
+          </View>
+          <View style={styles.progressBarContainerSmall}>
+            <View style={styles.progressBarBackgroundSmall}>
+              <View
+                style={[
+                  styles.progressBarFillSmall,
+                  {
+                    width: `${item.progress ?? 0}%`,
+                    backgroundColor: getProgressColor(item.progress ?? 0),
+                  },
+                ]}
+              />
+            </View>
+          </View>
+        </View>
       </View>
     </View>
   );
@@ -207,5 +266,53 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 12,
     color: "#666",
+  },
+  singleProgressSection: {
+    marginTop: 8,
+  },
+  progressRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  progressLabel: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '600',
+  },
+  progressPercent: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  progressBarContainerSmall: {
+    width: '100%',
+  },
+  progressBarBackgroundSmall: {
+    height: 6,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressBarFillSmall: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  deleteImageButton: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 5,
+  },
+  deleteText: {
+    color: '#FFF',
+    fontWeight: '700',
+    fontSize: 12,
   },
 });

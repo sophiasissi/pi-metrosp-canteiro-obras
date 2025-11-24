@@ -69,11 +69,21 @@ export interface Project {
   dataFim: string;
   imagemInicial?: string;
   imagensProgresso?: ProgressImage[];
+  createdAt?: string | Date;
   // Compatibilidade com interface antiga
   id?: string;
   name?: string;
   location?: string;
   progress?: number;
+  period?: string;
+  group?: string;
+  image?: string;
+  progressHistory?: Array<{
+    id: string;
+    image?: string;
+    progress?: number;
+    createdAt?: string | Date;
+  }>;
 }
 
 export interface AddProjectRequest {

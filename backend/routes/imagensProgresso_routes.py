@@ -56,11 +56,58 @@ def upload_progress_image(projetoID):
             db.session.add(novo_registro)
             db.session.commit()
 
-            # 9 — Retornar resultado
+            # 9 — Retornar o projeto atualizado (inclui imagens de progresso)
+            db.session.refresh(novo_registro)
+
+            projeto_atualizado = Projetos.query.filter_by(projetoID=projetoID).first()
+
+            imagens_progresso = [
+                {
+                    "imagemID": img.imagemID,
+                    "caminhoImagem": img.caminhoImagem,
+                    "porcentagem": img.porcentagem,
+                    "dataEnvio": img.dataEnvio.strftime("%Y-%m-%d %H:%M:%S") if img.dataEnvio else None,
+                }
+                for img in projeto_atualizado.imagens_progresso
+            ]
+
+            max_progress = None
+            if imagens_progresso:
+                max_progress = max([p["porcentagem"] or 0 for p in imagens_progresso])
+
+            result = {
+                "projetoID": projeto_atualizado.projetoID,
+                "nomeProjeto": projeto_atualizado.nomeProjeto,
+                "localizacao": projeto_atualizado.localizacao,
+                "dataInicio": projeto_atualizado.dataInicio.strftime("%Y-%m-%d") if projeto_atualizado.dataInicio else None,
+                "dataFim": projeto_atualizado.dataFim.strftime("%Y-%m-%d") if projeto_atualizado.dataFim else None,
+                "imagemInicial": projeto_atualizado.imagemInicial,
+                "imagensProgresso": imagens_progresso,
+                # compatibilidade
+                "id": str(projeto_atualizado.projetoID),
+                "name": projeto_atualizado.nomeProjeto,
+                "location": projeto_atualizado.localizacao,
+                "period": f"{projeto_atualizado.dataInicio.strftime('%Y-%m-%d') if projeto_atualizado.dataInicio else ''} - {projeto_atualizado.dataFim.strftime('%Y-%m-%d') if projeto_atualizado.dataFim else ''}",
+                "group": projeto_atualizado.grupo.nomeGrupo if projeto_atualizado.grupo else None,
+                "progress": max_progress if max_progress is not None else 0,
+                "image": projeto_atualizado.imagemInicial,
+                "progressHistory": [
+                    {
+                        "id": str(img.imagemID),
+                        "image": img.caminhoImagem,
+                        "progress": img.porcentagem,
+                        "createdAt": img.dataEnvio.strftime('%Y-%m-%d %H:%M:%S') if img.dataEnvio else None,
+                    }
+                    for img in projeto_atualizado.imagens_progresso
+                ],
+                "createdAt": projeto_atualizado.dataInicio.strftime('%Y-%m-%d') if projeto_atualizado.dataInicio else None,
+            }
+
             return jsonify({
                 "message": "Imagem de progresso adicionada com sucesso",
                 "porcentagem": porcentagem,
-                "caminhoImagem": imagem_url
+                "caminhoImagem": imagem_url,
+                "projeto": result
             }), 201
 
     finally:

@@ -142,9 +142,24 @@ class ApiService {
     });
   }
 
+  // Buscar todos os projetos (opcionalmente por grupo)
+  async getProjects(nomeGrupo?: string): Promise<ApiResponse<{ projetos: Project[] }>> {
+    const query = nomeGrupo ? `?nomeGrupo=${encodeURIComponent(nomeGrupo)}` : '';
+    return this.makeRequest<{ projetos: Project[] }>(`/projects${query}`, {
+      method: 'GET',
+    });
+  }
+
   // Remover projeto
   async removeProject(projetoID: number): Promise<ApiResponse<{ message: string }>> {
     return this.makeRequest<{ message: string }>(`/projects/remove/${projetoID}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Remover imagem de progresso
+  async removeProgressImage(imagemID: number): Promise<ApiResponse<{ message: string }>> {
+    return this.makeRequest<{ message: string }>(`/progress/delete/${imagemID}`, {
       method: 'DELETE',
     });
   }
@@ -158,7 +173,7 @@ class ApiService {
   }
 
   // Upload de imagem de progresso
-  async uploadProgressImage(projetoID: number, formData: FormData): Promise<ApiResponse<{ message: string; porcentagem: number }>> {
+  async uploadProgressImage(projetoID: number, formData: FormData): Promise<ApiResponse<any>> {
     try {
       const response = await fetch(`${API_BASE_URL}/progress/upload/${projetoID}`, {
         method: 'POST',

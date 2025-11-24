@@ -110,17 +110,39 @@ export default function AddProgressModal({ visible, onClose, projectId }: AddPro
       // Simulação do tempo de análise da CNN
       await new Promise(resolve => setTimeout(resolve, 3000));
       
-      // Por enquanto, mantemos um progresso temporário até a integração com a CNN
-      // Futuramente, será: progress: analysisResult.progressPercentage
-      const temporaryProgress = Math.min(100, ((project?.progressHistory?.length || 0) + 1) * 10);
+      // Criar FormData e enviar para o backend (endpoint /progress/upload/<projetoID>)
+      const formData = new FormData();
 
-      addProgressEntry(projectId, {
-        progress: temporaryProgress,
-        image: progressImage,
-      });
-      
+      if (Platform.OS === 'web') {
+        const resp = await fetch(progressImage);
+        const blob = await resp.blob();
+        const file = new File([blob], 'progress-image.jpg', { type: 'image/jpeg' });
+        formData.append('caminhoImagem', file);
+      } else {
+        // React Native: enviar objeto com uri, name, type
+        // @ts-ignore
+        formData.append('caminhoImagem', {
+          uri: progressImage,
+          name: 'progress-image.jpg',
+          type: 'image/jpeg',
+        } as any);
+      }
+
+      // projetoID no backend é numérico
+      const projetoIDnum = Number(projectId);
+
+  console.log('AddProgressModal: sending upload for projetoID', projetoIDnum);
+  const result = await addProgressEntry(projetoIDnum, formData);
+  console.log('AddProgressModal: upload result', result);
+
       setIsAnalyzing(false);
-      handleClose();
+
+      if (result.success) {
+        Alert.alert('Sucesso', `Imagem adicionada. Porcentagem: ${result.porcentagem ?? 0}%`);
+        handleClose();
+      } else {
+        Alert.alert('Erro', result.error || 'Falha ao enviar imagem de progresso');
+      }
     } catch {
       setIsAnalyzing(false);
       Alert.alert('Erro', 'Falha ao analisar o progresso. Tente novamente.');
