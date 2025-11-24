@@ -1,4 +1,4 @@
-import * as ImagePicker from 'expo-image-picker';
+import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -32,12 +32,16 @@ export default function AddProjectScreen() {
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
-  const [currentDateType, setCurrentDateType] = useState<'start' | 'end' | null>(null);
+  const [currentDateType, setCurrentDateType] = useState<
+    "start" | "end" | null
+  >(null);
   const [group, setGroup] = useState("");
   const [projectImage, setProjectImage] = useState<string | null>(null);
 
   // Estados para grupos
-  const [availableGroups, setAvailableGroups] = useState<{ grupoID: number; nomeGrupo: string }[]>([]);
+  const [availableGroups, setAvailableGroups] = useState<
+    { grupoID: number; nomeGrupo: string }[]
+  >([]);
   const [showGroupDropdown, setShowGroupDropdown] = useState(false);
   const [loadingGroups, setLoadingGroups] = useState(false);
 
@@ -49,10 +53,10 @@ export default function AddProjectScreen() {
 
   const formatDate = (date: Date | null) => {
     if (!date) return "Selecione uma data";
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
+    return date.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
     });
   };
 
@@ -64,18 +68,20 @@ export default function AddProjectScreen() {
         const result = await apiService.getGroups();
         if (result.success && result.data) {
           setAvailableGroups(result.data.grupos);
-          
+
           // Se o usuário logado tem grupo, defini-lo como padrão
           if (loggedUser?.nomeGrupo) {
-            const userGroup = result.data.grupos.find(g => g.nomeGrupo === loggedUser.nomeGrupo);
+            const userGroup = result.data.grupos.find(
+              (g) => g.nomeGrupo === loggedUser.nomeGrupo
+            );
             if (userGroup) {
               setGroup(userGroup.nomeGrupo);
             }
           }
         }
       } catch (error) {
-        console.error('Erro ao carregar grupos:', error);
-        Alert.alert('Erro', 'Não foi possível carregar os grupos disponíveis.');
+        console.error("Erro ao carregar grupos:", error);
+        Alert.alert("Erro", "Não foi possível carregar os grupos disponíveis.");
       } finally {
         setLoadingGroups(false);
       }
@@ -84,18 +90,33 @@ export default function AddProjectScreen() {
     loadGroups();
   }, [loggedUser?.nomeGrupo]);
 
-
-  const CustomCalendar = ({ onDateSelect, isEndDate }: { onDateSelect: (date: Date) => void; isEndDate?: boolean }) => {
+  const CustomCalendar = ({
+    onDateSelect,
+    isEndDate,
+  }: {
+    onDateSelect: (date: Date) => void;
+    isEndDate?: boolean;
+  }) => {
     const today = new Date();
     const [currentMonth, setCurrentMonth] = useState(today.getMonth());
     const [currentYear, setCurrentYear] = useState(today.getFullYear());
 
     const monthNames = [
-      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+      "Janeiro",
+      "Fevereiro",
+      "Março",
+      "Abril",
+      "Maio",
+      "Junho",
+      "Julho",
+      "Agosto",
+      "Setembro",
+      "Outubro",
+      "Novembro",
+      "Dezembro",
     ];
 
-    const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
     const getDaysInMonth = (month: number, year: number) => {
       return new Date(year, month + 1, 0).getDate();
@@ -110,19 +131,19 @@ export default function AddProjectScreen() {
       const firstDay = getFirstDayOfMonth(currentMonth, currentYear);
       const days = [];
 
-
       for (let i = 0; i < firstDay; i++) {
         days.push(null);
       }
-
 
       for (let day = 1; day <= daysInMonth; day++) {
         const date = new Date(currentYear, currentMonth, day);
         const isToday = date.toDateString() === today.toDateString();
         const isPast = date < today;
-        const isSelected = (startDate && date.toDateString() === startDate.toDateString()) ||
-                          (endDate && date.toDateString() === endDate.toDateString());
-        const isDisabled = isPast || (isEndDate && startDate && date <= startDate);
+        const isSelected =
+          (startDate && date.toDateString() === startDate.toDateString()) ||
+          (endDate && date.toDateString() === endDate.toDateString());
+        const isDisabled =
+          isPast || (isEndDate && startDate && date <= startDate);
 
         days.push({
           day,
@@ -130,7 +151,7 @@ export default function AddProjectScreen() {
           isToday,
           isPast,
           isSelected,
-          isDisabled
+          isDisabled,
         });
       }
 
@@ -175,41 +196,55 @@ export default function AddProjectScreen() {
         {}
         <View style={styles.dayNamesRow}>
           {dayNames.map((dayName) => (
-            <Text key={dayName} style={styles.dayName}>{dayName}</Text>
+            <Text key={dayName} style={styles.dayName}>
+              {dayName}
+            </Text>
           ))}
         </View>
 
         {}
         <View style={styles.daysGrid}>
-          {Array.from({ length: Math.ceil(days.length / 7) }).map((_, weekIndex) => (
-            <View key={weekIndex} style={styles.weekRow}>
-              {days.slice(weekIndex * 7, (weekIndex + 1) * 7).map((dayData, dayIndex) => (
-                <View key={dayIndex} style={styles.dayCell}>
-                  {dayData && (
-                    <TouchableOpacity
-                      style={[
-                        styles.dayButton,
-                        dayData.isSelected && styles.selectedDay,
-                        dayData.isToday && !dayData.isSelected && styles.todayDay,
-                        dayData.isDisabled && styles.disabledDay,
-                      ]}
-                      onPress={() => !dayData.isDisabled && onDateSelect(dayData.date)}
-                      disabled={dayData.isDisabled || false}
-                    >
-                      <Text style={[
-                        styles.dayText,
-                        dayData.isSelected && styles.selectedDayText,
-                        dayData.isToday && !dayData.isSelected && styles.todayDayText,
-                        dayData.isDisabled && styles.disabledDayText,
-                      ]}>
-                        {dayData.day}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              ))}
-            </View>
-          ))}
+          {Array.from({ length: Math.ceil(days.length / 7) }).map(
+            (_, weekIndex) => (
+              <View key={weekIndex} style={styles.weekRow}>
+                {days
+                  .slice(weekIndex * 7, (weekIndex + 1) * 7)
+                  .map((dayData, dayIndex) => (
+                    <View key={dayIndex} style={styles.dayCell}>
+                      {dayData && (
+                        <TouchableOpacity
+                          style={[
+                            styles.dayButton,
+                            dayData.isSelected && styles.selectedDay,
+                            dayData.isToday &&
+                              !dayData.isSelected &&
+                              styles.todayDay,
+                            dayData.isDisabled && styles.disabledDay,
+                          ]}
+                          onPress={() =>
+                            !dayData.isDisabled && onDateSelect(dayData.date)
+                          }
+                          disabled={dayData.isDisabled || false}
+                        >
+                          <Text
+                            style={[
+                              styles.dayText,
+                              dayData.isSelected && styles.selectedDayText,
+                              dayData.isToday &&
+                                !dayData.isSelected &&
+                                styles.todayDayText,
+                              dayData.isDisabled && styles.disabledDayText,
+                            ]}
+                          >
+                            {dayData.day}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  ))}
+              </View>
+            )
+          )}
         </View>
       </View>
     );
@@ -220,23 +255,24 @@ export default function AddProjectScreen() {
     today.setHours(0, 0, 0, 0);
 
     if (selectedDate < today) {
-      Alert.alert('Data Inválida', 'Selecione uma data futura.');
+      Alert.alert("Data Inválida", "Selecione uma data futura.");
       return;
     }
 
-    if (currentDateType === 'start') {
+    if (currentDateType === "start") {
       setStartDate(selectedDate);
-
 
       if (endDate && endDate <= selectedDate) {
         setEndDate(null);
-        setPeriodError("Selecione uma nova data de fim posterior à data de início");
+        setPeriodError(
+          "Selecione uma nova data de fim posterior à data de início"
+        );
       } else {
         setPeriodError("");
       }
 
       setShowStartDatePicker(false);
-    } else if (currentDateType === 'end') {
+    } else if (currentDateType === "end") {
       if (startDate && selectedDate <= startDate) {
         setPeriodError("A data de fim deve ser posterior à data de início");
         return;
@@ -250,15 +286,13 @@ export default function AddProjectScreen() {
     setCurrentDateType(null);
   };
 
-
-
   const openStartDatePicker = () => {
-    setCurrentDateType('start');
+    setCurrentDateType("start");
     setShowStartDatePicker(true);
   };
 
   const openEndDatePicker = () => {
-    setCurrentDateType('end');
+    setCurrentDateType("end");
     setShowEndDatePicker(true);
   };
 
@@ -279,7 +313,6 @@ export default function AddProjectScreen() {
       setLocationError("");
     }
 
-
     if (!startDate) {
       setPeriodError("Data de início é obrigatória");
       isValid = false;
@@ -287,7 +320,6 @@ export default function AddProjectScreen() {
       setPeriodError("Data de fim é obrigatória");
       isValid = false;
     } else {
-
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
@@ -309,7 +341,6 @@ export default function AddProjectScreen() {
       setGroupError("");
     }
 
-
     if (!projectImage) {
       setImageError("Imagem do projeto é obrigatória");
       isValid = false;
@@ -321,53 +352,44 @@ export default function AddProjectScreen() {
   };
 
   const handleSelectImage = async () => {
-
-    if (Platform.OS === 'web') {
-
+    if (Platform.OS === "web") {
       openGallery();
       return;
     }
 
-
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
-    if (status !== 'granted') {
+    if (status !== "granted") {
       Alert.alert(
-        'Permissão necessária',
-        'Precisamos de permissão para acessar a câmera.',
-        [{ text: 'OK' }]
+        "Permissão necessária",
+        "Precisamos de permissão para acessar a câmera.",
+        [{ text: "OK" }]
       );
       return;
     }
 
-
-    Alert.alert(
-      "Adicionar Foto",
-      "Escolha uma opção:",
-      [
-        {
-          text: "Câmera",
-          onPress: openCamera,
-        },
-        {
-          text: "Galeria",
-          onPress: openGallery,
-        },
-        {
-          text: "Cancelar",
-          style: "cancel",
-        },
-      ]
-    );
+    Alert.alert("Adicionar Foto", "Escolha uma opção:", [
+      {
+        text: "Câmera",
+        onPress: openCamera,
+      },
+      {
+        text: "Galeria",
+        onPress: openGallery,
+      },
+      {
+        text: "Cancelar",
+        style: "cancel",
+      },
+    ]);
   };
 
   const openCamera = async () => {
-
-    if (Platform.OS === 'web') {
+    if (Platform.OS === "web") {
       Alert.alert(
-        'Câmera indisponível',
-        'A funcionalidade de câmera não está disponível na versão web. Use a galeria para selecionar uma imagem.',
-        [{ text: 'OK' }]
+        "Câmera indisponível",
+        "A funcionalidade de câmera não está disponível na versão web. Use a galeria para selecionar uma imagem.",
+        [{ text: "OK" }]
       );
       return;
     }
@@ -385,20 +407,20 @@ export default function AddProjectScreen() {
         setImageError("");
       }
     } catch {
-      Alert.alert('Erro', 'Não foi possível abrir a câmera.');
+      Alert.alert("Erro", "Não foi possível abrir a câmera.");
     }
   };
 
   const openGallery = async () => {
     try {
-
-      if (Platform.OS !== 'web') {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
+      if (Platform.OS !== "web") {
+        const { status } =
+          await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== "granted") {
           Alert.alert(
-            'Permissão necessária',
-            'Precisamos de permissão para acessar a galeria de fotos.',
-            [{ text: 'OK' }]
+            "Permissão necessária",
+            "Precisamos de permissão para acessar a galeria de fotos.",
+            [{ text: "OK" }]
           );
           return;
         }
@@ -416,10 +438,11 @@ export default function AddProjectScreen() {
         setImageError("");
       }
     } catch {
-      const errorMessage = Platform.OS === 'web'
-        ? 'Não foi possível selecionar a imagem. Verifique se o arquivo é uma imagem válida.'
-        : 'Não foi possível abrir a galeria.';
-      Alert.alert('Erro', errorMessage);
+      const errorMessage =
+        Platform.OS === "web"
+          ? "Não foi possível selecionar a imagem. Verifique se o arquivo é uma imagem válida."
+          : "Não foi possível abrir a galeria.";
+      Alert.alert("Erro", errorMessage);
     }
   };
 
@@ -436,28 +459,36 @@ export default function AddProjectScreen() {
     try {
       // Criar FormData para envio de arquivo
       const formData = new FormData();
-      formData.append('nomeProjeto', projectName.trim());
-      formData.append('localizacao', location.trim());
-      formData.append('dataInicio', startDate ? startDate.toISOString().split("T")[0] : '');
-      formData.append('dataFim', endDate ? endDate.toISOString().split("T")[0] : '');
-      formData.append('nomeGrupo', group.trim());
+      formData.append("nomeProjeto", projectName.trim());
+      formData.append("localizacao", location.trim());
+      formData.append(
+        "dataInicio",
+        startDate ? startDate.toISOString().split("T")[0] : ""
+      );
+      formData.append(
+        "dataFim",
+        endDate ? endDate.toISOString().split("T")[0] : ""
+      );
+      formData.append("nomeGrupo", group.trim());
 
       if (projectImage) {
         // Diferenciar envio entre web e React Native
-        if (Platform.OS === 'web') {
+        if (Platform.OS === "web") {
           // Web: usar File
           const response = await fetch(projectImage);
           const blob = await response.blob();
-          const file = new File([blob], 'project-image.jpg', { type: 'image/jpeg' });
-          formData.append('imagemInicial', file);
+          const file = new File([blob], "project-image.jpg", {
+            type: "image/jpeg",
+          });
+          formData.append("imagemInicial", file);
         } else {
           // React Native (Android/iOS/Expo): anexar objeto com uri/nome/tipo
           // FormData em RN espera este formato ao enviar arquivos
           // @ts-ignore - FormData type in React Native can vary
-          formData.append('imagemInicial', {
+          formData.append("imagemInicial", {
             uri: projectImage,
-            name: 'project-image.jpg',
-            type: 'image/jpeg',
+            name: "project-image.jpg",
+            type: "image/jpeg",
           } as any);
         }
       }
@@ -465,24 +496,29 @@ export default function AddProjectScreen() {
       const result = await apiService.addProject(formData);
 
       if (result.success) {
-        Alert.alert("Sucesso!", result.data?.message || "Projeto criado com sucesso!");
+        Alert.alert(
+          "Sucesso!",
+          result.data?.message || "Projeto criado com sucesso!"
+        );
         // Atualiza lista de projetos no contexto e volta para a home
         try {
           // passar o nome do grupo selecionado para garantir que o refresh traga os projetos corretos
           await refreshProjects(group.trim());
         } catch (e) {
-          console.warn('refreshProjects falhou', e);
+          console.warn("refreshProjects falhou", e);
         }
         router.replace("/(drawer)/home");
       } else {
-        Alert.alert("Erro", result.error || "Não foi possível criar o projeto.");
+        Alert.alert(
+          "Erro",
+          result.error || "Não foi possível criar o projeto."
+        );
       }
     } catch (error) {
       console.error(error);
       Alert.alert("Erro", "Falha ao conectar com o servidor.");
     }
   };
-
 
   return (
     <KeyboardAvoidingView
@@ -496,10 +532,7 @@ export default function AddProjectScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View
-          style={[
-            styles.container,
-            isLargeScreen && styles.containerLarge,
-          ]}
+          style={[styles.container, isLargeScreen && styles.containerLarge]}
         >
           <View
             style={[
@@ -538,13 +571,16 @@ export default function AddProjectScreen() {
             <TouchableOpacity
               style={[
                 styles.imageContainer,
-                imageError ? styles.imageContainerError : null
+                imageError ? styles.imageContainerError : null,
               ]}
               onPress={handleSelectImage}
             >
               {projectImage ? (
                 <View style={styles.imageWrapper}>
-                  <Image source={{ uri: projectImage }} style={styles.projectImage} />
+                  <Image
+                    source={{ uri: projectImage }}
+                    style={styles.projectImage}
+                  />
                   <View style={styles.imageOverlay}>
                     <TouchableOpacity
                       style={styles.changeImageButton}
@@ -559,10 +595,9 @@ export default function AddProjectScreen() {
                 <View style={styles.cameraPlaceholder}>
                   <Icon name="camera" size={40} color="#B0B0B0" />
                   <Text style={styles.cameraText}>
-                    {Platform.OS === 'web'
-                      ? 'Toque para selecionar foto'
-                      : 'Toque para tirar foto ou selecionar da galeria'
-                    }
+                    {Platform.OS === "web"
+                      ? "Toque para selecionar foto"
+                      : "Toque para tirar foto ou selecionar da galeria"}
                   </Text>
                 </View>
               )}
@@ -575,10 +610,11 @@ export default function AddProjectScreen() {
 
             {}
             <Text style={styles.instructionText}>
-              📷 Certifique-se de adicionar a versão final do projeto para que ela possa ser comparada posteriormente com as fotos reais do canteiro de obras.
-              {Platform.OS === 'web' && (
-                '\n\n💡 Dica: Na versão web, use a opção de selecionar arquivo para escolher uma imagem do seu computador.'
-              )}
+              📷 Certifique-se de adicionar a versão final do projeto para que
+              ela possa ser comparada posteriormente com as fotos reais do
+              canteiro de obras.
+              {Platform.OS === "web" &&
+                "\n\n💡 Dica: Na versão web, use a opção de selecionar arquivo para escolher uma imagem do seu computador."}
             </Text>
 
             {}
@@ -650,7 +686,9 @@ export default function AddProjectScreen() {
                 <View style={styles.modalOverlay}>
                   <View style={styles.calendarModal}>
                     <View style={styles.modalHeader}>
-                      <Text style={styles.modalTitle}>Selecione a Data de Início</Text>
+                      <Text style={styles.modalTitle}>
+                        Selecione a Data de Início
+                      </Text>
                       <TouchableOpacity
                         style={styles.closeButton}
                         onPress={() => setShowStartDatePicker(false)}
@@ -673,7 +711,9 @@ export default function AddProjectScreen() {
                 <View style={styles.modalOverlay}>
                   <View style={styles.calendarModal}>
                     <View style={styles.modalHeader}>
-                      <Text style={styles.modalTitle}>Selecionar Data de Fim</Text>
+                      <Text style={styles.modalTitle}>
+                        Selecionar Data de Fim
+                      </Text>
                       <TouchableOpacity
                         style={styles.closeButton}
                         onPress={() => setShowEndDatePicker(false)}
@@ -682,7 +722,10 @@ export default function AddProjectScreen() {
                       </TouchableOpacity>
                     </View>
 
-                    <CustomCalendar onDateSelect={handleDateSelect} isEndDate={true} />
+                    <CustomCalendar
+                      onDateSelect={handleDateSelect}
+                      isEndDate={true}
+                    />
                   </View>
                 </View>
               </Modal>
@@ -700,24 +743,25 @@ export default function AddProjectScreen() {
                   styles.input,
                   isLargeScreen && styles.inputLarge,
                   groupError ? styles.inputError : null,
-                  styles.dropdownButton
+                  styles.dropdownButton,
                 ]}
                 onPress={() => setShowGroupDropdown(!showGroupDropdown)}
                 disabled={loadingGroups}
               >
-                <Text style={[
-                  styles.dropdownText,
-                  !group && styles.placeholderText
-                ]}>
-                  {loadingGroups 
-                    ? "Carregando grupos..." 
-                    : group || "Selecione um grupo"
-                  }
+                <Text
+                  style={[
+                    styles.dropdownText,
+                    !group && styles.placeholderText,
+                  ]}
+                >
+                  {loadingGroups
+                    ? "Carregando grupos..."
+                    : group || "Selecione um grupo"}
                 </Text>
-                <Icon 
-                  name={showGroupDropdown ? "chevron-up" : "chevron-down"} 
-                  size={16} 
-                  color="#666" 
+                <Icon
+                  name={showGroupDropdown ? "chevron-up" : "chevron-down"}
+                  size={16}
+                  color="#666"
                 />
               </TouchableOpacity>
 
@@ -734,12 +778,16 @@ export default function AddProjectScreen() {
                           if (groupError) setGroupError("");
                         }}
                       >
-                        <Text style={styles.dropdownItemText}>{grupo.nomeGrupo}</Text>
+                        <Text style={styles.dropdownItemText}>
+                          {grupo.nomeGrupo}
+                        </Text>
                       </TouchableOpacity>
                     ))
                   ) : (
                     <View style={styles.dropdownItem}>
-                      <Text style={[styles.dropdownItemText, styles.noOptionsText]}>
+                      <Text
+                        style={[styles.dropdownItemText, styles.noOptionsText]}
+                      >
                         Nenhum grupo encontrado
                       </Text>
                     </View>
@@ -762,8 +810,6 @@ export default function AddProjectScreen() {
           </View>
         </View>
       </ScrollView>
-
-
     </KeyboardAvoidingView>
   );
 }
@@ -1059,122 +1105,122 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   customCalendar: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     padding: 15,
   },
   calendarHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 15,
     paddingVertical: 10,
   },
   navButton: {
     padding: 10,
     borderRadius: 8,
-    backgroundColor: '#082A85',
+    backgroundColor: "#082A85",
     minWidth: 40,
     minHeight: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   monthYear: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#082A85',
+    fontWeight: "700",
+    color: "#082A85",
   },
   dayNamesRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-around",
     marginBottom: 10,
     paddingVertical: 8,
-    backgroundColor: '#F0F4FF',
+    backgroundColor: "#F0F4FF",
     borderRadius: 8,
   },
   dayName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#082A85',
-    textAlign: 'center',
+    fontWeight: "600",
+    color: "#082A85",
+    textAlign: "center",
     flex: 1,
   },
   daysGrid: {
     gap: 5,
   },
   weekRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-around",
     marginBottom: 5,
   },
   dayCell: {
     flex: 1,
     height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   dayButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "transparent",
   },
   selectedDay: {
-    backgroundColor: '#082A85',
+    backgroundColor: "#082A85",
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
   todayDay: {
-    backgroundColor: '#E6F0FF',
+    backgroundColor: "#E6F0FF",
     borderWidth: 2,
-    borderColor: '#082A85',
+    borderColor: "#082A85",
   },
   disabledDay: {
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
   },
   dayText: {
     fontSize: 16,
-    color: '#333333',
-    fontWeight: '500',
+    color: "#333333",
+    fontWeight: "500",
   },
   selectedDayText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
+    color: "#FFFFFF",
+    fontWeight: "700",
   },
   todayDayText: {
-    color: '#082A85',
-    fontWeight: '700',
+    color: "#082A85",
+    fontWeight: "700",
   },
   disabledDayText: {
-    color: '#d9e1e8',
+    color: "#d9e1e8",
   },
-  
+
   // Estilos para o dropdown de grupos
   dropdownButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   dropdownText: {
     fontSize: 16,
-    color: '#333333',
+    color: "#333333",
     flex: 1,
   },
   placeholderText: {
-    color: '#B0B0B0',
+    color: "#B0B0B0",
   },
   dropdownList: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: "#E0E0E0",
     borderRadius: 8,
     marginTop: 5,
     maxHeight: 200,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -1187,15 +1233,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: "#F0F0F0",
   },
   dropdownItemText: {
     fontSize: 16,
-    color: '#333333',
+    color: "#333333",
   },
   noOptionsText: {
-    fontStyle: 'italic',
-    color: '#999999',
+    fontStyle: "italic",
+    color: "#999999",
   },
-
 });

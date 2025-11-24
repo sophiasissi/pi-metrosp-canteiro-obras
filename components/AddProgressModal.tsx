@@ -1,4 +1,4 @@
-import * as ImagePicker from 'expo-image-picker';
+import * as ImagePicker from "expo-image-picker";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -9,7 +9,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useProjects } from "../contexts/ProjectContext";
@@ -20,41 +20,45 @@ interface AddProgressModalProps {
   projectId: string;
 }
 
-export default function AddProgressModal({ visible, onClose, projectId }: AddProgressModalProps) {
+export default function AddProgressModal({
+  visible,
+  onClose,
+  projectId,
+}: AddProgressModalProps) {
   const { projects, addProgressEntry } = useProjects();
   const [progressImage, setProgressImage] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const project = projects.find(p => p.id === projectId);
+  const project = projects.find((p) => p.id === projectId);
 
   if (!project) {
     return null;
   }
 
   const handleSelectImage = async () => {
-    if (Platform.OS === 'web') {
+    if (Platform.OS === "web") {
       openGallery();
       return;
     }
 
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
-    if (status !== 'granted') {
+    if (status !== "granted") {
       Alert.alert(
-        'Permissão necessária',
-        'Precisamos de permissão para acessar a câmera.',
-        [{ text: 'OK' }]
+        "Permissão necessária",
+        "Precisamos de permissão para acessar a câmera.",
+        [{ text: "OK" }]
       );
       return;
     }
 
     Alert.alert(
-      'Selecionar Imagem',
-      'Como você gostaria de adicionar a imagem?',
+      "Selecionar Imagem",
+      "Como você gostaria de adicionar a imagem?",
       [
-        { text: 'Câmera', onPress: openCamera },
-        { text: 'Galeria', onPress: openGallery },
-        { text: 'Cancelar', style: 'cancel' }
+        { text: "Câmera", onPress: openCamera },
+        { text: "Galeria", onPress: openGallery },
+        { text: "Cancelar", style: "cancel" },
       ]
     );
   };
@@ -62,7 +66,7 @@ export default function AddProgressModal({ visible, onClose, projectId }: AddPro
   const openCamera = async () => {
     try {
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsEditing: true,
         aspect: [4, 3],
         quality: 1,
@@ -72,15 +76,15 @@ export default function AddProgressModal({ visible, onClose, projectId }: AddPro
         setProgressImage(result.assets[0].uri);
       }
     } catch (error) {
-      console.error('Erro ao abrir câmera:', error);
-      Alert.alert('Erro', 'Não foi possível abrir a câmera.');
+      console.error("Erro ao abrir câmera:", error);
+      Alert.alert("Erro", "Não foi possível abrir a câmera.");
     }
   };
 
   const openGallery = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsEditing: true,
         aspect: [4, 3],
         quality: 1,
@@ -90,14 +94,14 @@ export default function AddProgressModal({ visible, onClose, projectId }: AddPro
         setProgressImage(result.assets[0].uri);
       }
     } catch (error) {
-      console.error('Erro ao abrir galeria:', error);
-      Alert.alert('Erro', 'Não foi possível abrir a galeria.');
+      console.error("Erro ao abrir galeria:", error);
+      Alert.alert("Erro", "Não foi possível abrir a galeria.");
     }
   };
 
   const handleSaveProgress = async () => {
     if (!progressImage) {
-      Alert.alert('Erro', 'Por favor, adicione uma foto do progresso.');
+      Alert.alert("Erro", "Por favor, adicione uma foto do progresso.");
       return;
     }
 
@@ -106,46 +110,57 @@ export default function AddProgressModal({ visible, onClose, projectId }: AddPro
     try {
       // TODO: Integração com CNN do backend
       // const analysisResult = await analyzProgressWithCNN(progressImage, project.image);
-      
+
       // Simulação do tempo de análise da CNN
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
       // Criar FormData e enviar para o backend (endpoint /progress/upload/<projetoID>)
       const formData = new FormData();
 
-      if (Platform.OS === 'web') {
+      if (Platform.OS === "web") {
         const resp = await fetch(progressImage);
         const blob = await resp.blob();
-        const file = new File([blob], 'progress-image.jpg', { type: 'image/jpeg' });
-        formData.append('caminhoImagem', file);
+        const file = new File([blob], "progress-image.jpg", {
+          type: "image/jpeg",
+        });
+        formData.append("caminhoImagem", file);
       } else {
         // React Native: enviar objeto com uri, name, type
         // @ts-ignore
-        formData.append('caminhoImagem', {
+        formData.append("caminhoImagem", {
           uri: progressImage,
-          name: 'progress-image.jpg',
-          type: 'image/jpeg',
+          name: "progress-image.jpg",
+          type: "image/jpeg",
         } as any);
       }
 
       // projetoID no backend é numérico
       const projetoIDnum = Number(projectId);
 
-  console.log('AddProgressModal: sending upload for projetoID', projetoIDnum);
-  const result = await addProgressEntry(projetoIDnum, formData);
-  console.log('AddProgressModal: upload result', result);
+      console.log(
+        "AddProgressModal: sending upload for projetoID",
+        projetoIDnum
+      );
+      const result = await addProgressEntry(projetoIDnum, formData);
+      console.log("AddProgressModal: upload result", result);
 
       setIsAnalyzing(false);
 
       if (result.success) {
-        Alert.alert('Sucesso', `Imagem adicionada. Porcentagem: ${result.porcentagem ?? 0}%`);
+        Alert.alert(
+          "Sucesso",
+          `Imagem adicionada. Porcentagem: ${result.porcentagem ?? 0}%`
+        );
         handleClose();
       } else {
-        Alert.alert('Erro', result.error || 'Falha ao enviar imagem de progresso');
+        Alert.alert(
+          "Erro",
+          result.error || "Falha ao enviar imagem de progresso"
+        );
       }
     } catch {
       setIsAnalyzing(false);
-      Alert.alert('Erro', 'Falha ao analisar o progresso. Tente novamente.');
+      Alert.alert("Erro", "Falha ao analisar o progresso. Tente novamente.");
     }
   };
 
@@ -172,7 +187,10 @@ export default function AddProgressModal({ visible, onClose, projectId }: AddPro
               onPress={handleSelectImage}
             >
               {progressImage ? (
-                <Image source={{ uri: progressImage }} style={styles.selectedImage} />
+                <Image
+                  source={{ uri: progressImage }}
+                  style={styles.selectedImage}
+                />
               ) : (
                 <View style={styles.imagePlaceholder}>
                   <Icon name="camera" size={30} color="#001489" />
@@ -188,22 +206,27 @@ export default function AddProgressModal({ visible, onClose, projectId }: AddPro
           <View style={styles.buttonContainer}>
             <TouchableOpacity
               style={[
-                styles.confirmButton, 
-                (isAnalyzing || !progressImage) && styles.buttonDisabled
+                styles.confirmButton,
+                (isAnalyzing || !progressImage) && styles.buttonDisabled,
               ]}
               onPress={handleSaveProgress}
               disabled={isAnalyzing || !progressImage}
             >
-              <Text style={[
-                styles.confirmButtonText,
-                !progressImage && styles.disabledButtonText
-              ]}>
+              <Text
+                style={[
+                  styles.confirmButtonText,
+                  !progressImage && styles.disabledButtonText,
+                ]}
+              >
                 Confirmar
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.cancelButton, isAnalyzing && styles.buttonDisabled]}
+              style={[
+                styles.cancelButton,
+                isAnalyzing && styles.buttonDisabled,
+              ]}
               onPress={handleClose}
               disabled={isAnalyzing}
             >
@@ -216,7 +239,9 @@ export default function AddProgressModal({ visible, onClose, projectId }: AddPro
             <View style={styles.analysisOverlay}>
               <View style={styles.analysisContainer}>
                 <ActivityIndicator size="large" color="#001489" />
-                <Text style={styles.analysisTitle}>Analisando progresso...</Text>
+                <Text style={styles.analysisTitle}>
+                  Analisando progresso...
+                </Text>
                 <Text style={styles.analysisSubtitle}>
                   Comparando com a planta baixa
                 </Text>
@@ -321,31 +346,31 @@ const styles = StyleSheet.create({
     backgroundColor: "#E0E0E0",
   },
   analysisOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    justifyContent: "center",
+    alignItems: "center",
     borderRadius: 15,
   },
   analysisContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     padding: 30,
   },
   analysisTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#001489',
+    fontWeight: "bold",
+    color: "#001489",
     marginTop: 15,
-    textAlign: 'center',
+    textAlign: "center",
   },
   analysisSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
     marginTop: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });

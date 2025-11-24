@@ -6,7 +6,7 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useWindowDimensions
+  useWindowDimensions,
 } from "react-native";
 import AddProgressModal from "../../components/AddProgressModal";
 import PhotoProgressList from "../../components/PhotoProgressList";
@@ -21,7 +21,10 @@ export default function ProjectDetailsScreen() {
 
   // projectId comes from route params as string; projects store id as string or projetoID as number
   const pid = projectId ? String(projectId) : undefined;
-  const project = projects.find(p => (p.id && p.id === pid) || (p.projetoID && String(p.projetoID) === pid));
+  const project = projects.find(
+    (p) =>
+      (p.id && p.id === pid) || (p.projetoID && String(p.projetoID) === pid)
+  );
 
   if (!project) {
     return (
@@ -40,34 +43,39 @@ export default function ProjectDetailsScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {}
         <View style={styles.header}>
-          <Text style={styles.projectName}>{project.name || project.nomeProjeto}</Text>
+          <Text style={styles.projectName}>
+            {project.name || project.nomeProjeto}
+          </Text>
           <View style={styles.divider} />
         </View>
 
         {}
         <View style={styles.projectInfo}>
           <Text style={styles.infoText}>
-            <Text style={styles.infoLabel}>Período de Tempo:</Text> {project.period || `${project.dataInicio} - ${project.dataFim}`}
+            <Text style={styles.infoLabel}>Período de Tempo:</Text>{" "}
+            {project.period || `${project.dataInicio} - ${project.dataFim}`}
           </Text>
           <Text style={styles.infoText}>
-            <Text style={styles.infoLabel}>Localização:</Text> {project.location || project.localizacao}
+            <Text style={styles.infoLabel}>Localização:</Text>{" "}
+            {project.location || project.localizacao}
           </Text>
           <Text style={styles.infoText}>
-            <Text style={styles.infoLabel}>Grupo:</Text> {project.group || ''}
+            <Text style={styles.infoLabel}>Grupo:</Text> {project.group || ""}
           </Text>
-          
+
           {}
           <View style={styles.progressSection}>
             <Text style={styles.infoText}>
-              <Text style={styles.infoLabel}>Progresso:</Text> {project.progress ?? 0}%
+              <Text style={styles.infoLabel}>Progresso:</Text>{" "}
+              {project.progress ?? 0}%
             </Text>
             <View style={styles.progressBarContainer}>
               <View style={styles.progressBarBackground}>
-                <View 
+                <View
                   style={[
-                    styles.progressBarFill, 
-                    { width: `${project.progress ?? 0}%` }
-                  ]} 
+                    styles.progressBarFill,
+                    { width: `${project.progress ?? 0}%` },
+                  ]}
                 />
               </View>
             </View>
@@ -92,7 +100,9 @@ export default function ProjectDetailsScreen() {
         </View>
 
         {}
-  <PhotoProgressList projectId={project.id ?? String(project.projetoID)} />
+        <PhotoProgressList
+          projectId={project.id ?? String(project.projetoID)}
+        />
       </ScrollView>
 
       {}

@@ -22,20 +22,24 @@ interface PhotoProgress {
   image?: string;
 }
 
-export default function PhotoProgressList({ projectId }: PhotoProgressListProps) {
+export default function PhotoProgressList({
+  projectId,
+}: PhotoProgressListProps) {
   const { projects, removeProgressImage } = useProjects();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
-  const project = projects.find(p => p.id === projectId || String(p.projetoID) === String(projectId));
+  const project = projects.find(
+    (p) => p.id === projectId || String(p.projetoID) === String(projectId)
+  );
   const photoProgress: PhotoProgress[] = [];
 
   const formatDate = (d?: string | Date | null) => {
-    if (!d) return '';
+    if (!d) return "";
     try {
-      const dateObj = typeof d === 'string' ? new Date(d) : d;
+      const dateObj = typeof d === "string" ? new Date(d) : d;
       if (!dateObj || isNaN((dateObj as Date).getTime())) return String(d);
-      return (dateObj as Date).toLocaleDateString('pt-BR');
+      return (dateObj as Date).toLocaleDateString("pt-BR");
     } catch {
       return String(d);
     }
@@ -58,8 +62,8 @@ export default function PhotoProgressList({ projectId }: PhotoProgressListProps)
 
   if (project?.image) {
     photoProgress.push({
-      id: 'initial',
-      imageNumber: 'Planta Baixa',
+      id: "initial",
+      imageNumber: "Planta Baixa",
       progress: 0,
       date: formatDate(project.createdAt),
       image: project.image,
@@ -67,8 +71,11 @@ export default function PhotoProgressList({ projectId }: PhotoProgressListProps)
   }
 
   if (photoProgress.length === 0) {
-    console.log('PhotoProgressList: project', project);
-    console.log('PhotoProgressList: photoProgress length', photoProgress.length);
+    console.log("PhotoProgressList: project", project);
+    console.log(
+      "PhotoProgressList: photoProgress length",
+      photoProgress.length
+    );
     return (
       <View style={styles.container}>
         <View style={styles.emptyState}>
@@ -82,13 +89,13 @@ export default function PhotoProgressList({ projectId }: PhotoProgressListProps)
   }
 
   const getProgressColor = (progress: number) => {
-    if (progress === 0) return '#95A5A6';
-    if (progress <= 20) return '#E74C3C';
-    if (progress <= 40) return '#FF6B35';
-    if (progress <= 60) return '#F39C12';
-    if (progress <= 80) return '#F1C40F';
-    if (progress < 100) return '#2ECC71';
-    return '#27AE60';
+    if (progress === 0) return "#95A5A6";
+    if (progress <= 20) return "#E74C3C";
+    if (progress <= 40) return "#FF6B35";
+    if (progress <= 60) return "#F39C12";
+    if (progress <= 80) return "#F1C40F";
+    if (progress < 100) return "#2ECC71";
+    return "#27AE60";
   };
 
   const handleImagePress = (imageUri?: string) => {
@@ -123,22 +130,25 @@ export default function PhotoProgressList({ projectId }: PhotoProgressListProps)
       </TouchableOpacity>
 
       {/* Delete button for each progress image */}
-      {item.id !== 'initial' && (
+      {item.id !== "initial" && (
         <TouchableOpacity
           style={styles.deleteImageButton}
           onPress={() => {
             Alert.alert(
-              'Confirmar',
-              'Deseja excluir esta imagem de progresso?',
+              "Confirmar",
+              "Deseja excluir esta imagem de progresso?",
               [
-                { text: 'Cancelar', style: 'cancel' },
-                { text: 'Excluir', style: 'destructive', onPress: async () => {
+                { text: "Cancelar", style: "cancel" },
+                {
+                  text: "Excluir",
+                  style: "destructive",
+                  onPress: async () => {
                     const imgIdNum = Number(item.id);
                     const projIdNum = Number(projectId);
                     await removeProgressImage(projIdNum, imgIdNum);
                     // Optionally you can handle res.success here
-                  }
-                }
+                  },
+                },
               ]
             );
           }}
@@ -154,7 +164,14 @@ export default function PhotoProgressList({ projectId }: PhotoProgressListProps)
         <View style={styles.singleProgressSection}>
           <View style={styles.progressRow}>
             <Text style={styles.progressLabel}>Progresso</Text>
-            <Text style={[styles.progressPercent, { color: getProgressColor(item.progress || 0) }]}>{item.progress ?? 0}%</Text>
+            <Text
+              style={[
+                styles.progressPercent,
+                { color: getProgressColor(item.progress || 0) },
+              ]}
+            >
+              {item.progress ?? 0}%
+            </Text>
           </View>
           <View style={styles.progressBarContainerSmall}>
             <View style={styles.progressBarBackgroundSmall}>
@@ -271,48 +288,48 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   progressRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 6,
   },
   progressLabel: {
     fontSize: 12,
-    color: '#666',
-    fontWeight: '600',
+    color: "#666",
+    fontWeight: "600",
   },
   progressPercent: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   progressBarContainerSmall: {
-    width: '100%',
+    width: "100%",
   },
   progressBarBackgroundSmall: {
     height: 6,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: "#E0E0E0",
     borderRadius: 3,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   progressBarFillSmall: {
-    height: '100%',
+    height: "100%",
     borderRadius: 3,
   },
   deleteImageButton: {
-    position: 'absolute',
+    position: "absolute",
     top: 6,
     right: 6,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: "rgba(0,0,0,0.5)",
     width: 26,
     height: 26,
     borderRadius: 13,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 5,
   },
   deleteText: {
-    color: '#FFF',
-    fontWeight: '700',
+    color: "#FFF",
+    fontWeight: "700",
     fontSize: 12,
   },
 });

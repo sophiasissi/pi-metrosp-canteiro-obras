@@ -4,10 +4,10 @@ import type {
   LoginRequest,
   LoginResponse,
   Project,
-  RegisterRequest
-} from '../types/api';
+  RegisterRequest,
+} from "../types/api";
 
-const API_BASE_URL = 'http://127.0.0.1:5000/api'; // Endereço do backend Flask
+const API_BASE_URL = "http://127.0.0.1:5000/api"; // Endereço do backend Flask
 
 class ApiService {
   private async makeRequest<T>(
@@ -17,7 +17,7 @@ class ApiService {
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           ...options.headers,
         },
         ...options,
@@ -34,14 +34,14 @@ class ApiService {
       } else {
         return {
           success: false,
-          error: data.message || 'Erro desconhecido',
+          error: data.message || "Erro desconhecido",
           status: response.status,
         };
       }
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erro de conexão',
+        error: error instanceof Error ? error.message : "Erro de conexão",
         status: 0,
       };
     }
@@ -49,36 +49,42 @@ class ApiService {
 
   // Login do usuário
   async login(credentials: LoginRequest): Promise<ApiResponse<LoginResponse>> {
-    return this.makeRequest<LoginResponse>('/user/login', {
-      method: 'POST',
+    return this.makeRequest<LoginResponse>("/user/login", {
+      method: "POST",
       body: JSON.stringify(credentials),
     });
   }
 
   // Registro de usuário
-  async register(userData: RegisterRequest): Promise<ApiResponse<{ message: string }>> {
-    return this.makeRequest<{ message: string }>('/user/register', {
-      method: 'POST',
+  async register(
+    userData: RegisterRequest
+  ): Promise<ApiResponse<{ message: string }>> {
+    return this.makeRequest<{ message: string }>("/user/register", {
+      method: "POST",
       body: JSON.stringify(userData),
     });
   }
 
   // Buscar informações do usuário
-  async getUserInfo(cpf: string): Promise<ApiResponse<{
-    cpf: string;
-    nomeCompleto: string;
-    nomeGrupo: string;
-    adm: boolean;
-  }>> {
+  async getUserInfo(cpf: string): Promise<
+    ApiResponse<{
+      cpf: string;
+      nomeCompleto: string;
+      nomeGrupo: string;
+      adm: boolean;
+    }>
+  > {
     return this.makeRequest(`/user/settings/show-info/${cpf}`, {
-      method: 'GET',
+      method: "GET",
     });
   }
 
   // Atualizar informações do usuário
-  async updateUserInfo(userData: any): Promise<ApiResponse<{ message: string }>> {
-    return this.makeRequest('/user/settings/change-info', {
-      method: 'PUT',
+  async updateUserInfo(
+    userData: any
+  ): Promise<ApiResponse<{ message: string }>> {
+    return this.makeRequest("/user/settings/change-info", {
+      method: "PUT",
       body: JSON.stringify(userData),
     });
   }
@@ -86,9 +92,9 @@ class ApiService {
   // Testar conexão com o backend
   async testConnection(): Promise<ApiResponse<{ message: string }>> {
     try {
-      const response = await fetch('http://127.0.0.1:5000/');
+      const response = await fetch("http://127.0.0.1:5000/");
       const data = await response.json();
-      
+
       return {
         success: response.ok,
         data,
@@ -97,17 +103,19 @@ class ApiService {
     } catch (error) {
       return {
         success: false,
-        error: 'Backend não está respondendo',
+        error: "Backend não está respondendo",
         status: 0,
       };
     }
   }
 
   // Adicionar projeto
-  async addProject(formData: FormData): Promise<ApiResponse<{ message: string }>> {
+  async addProject(
+    formData: FormData
+  ): Promise<ApiResponse<{ message: string }>> {
     try {
       const response = await fetch(`${API_BASE_URL}/projects/add`, {
-        method: 'POST',
+        method: "POST",
         body: formData, // FormData para upload de arquivo
       });
 
@@ -122,14 +130,14 @@ class ApiService {
       } else {
         return {
           success: false,
-          error: data.message || 'Erro desconhecido',
+          error: data.message || "Erro desconhecido",
           status: response.status,
         };
       }
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erro de conexão',
+        error: error instanceof Error ? error.message : "Erro de conexão",
         status: 0,
       };
     }
@@ -138,47 +146,73 @@ class ApiService {
   // Buscar projeto por ID
   async getProject(projetoID: number): Promise<ApiResponse<Project>> {
     return this.makeRequest<Project>(`/projects/show/${projetoID}`, {
-      method: 'GET',
+      method: "GET",
     });
   }
 
   // Buscar todos os projetos (opcionalmente por grupo)
-  async getProjects(nomeGrupo?: string): Promise<ApiResponse<{ projetos: Project[] }>> {
-    const query = nomeGrupo ? `?nomeGrupo=${encodeURIComponent(nomeGrupo)}` : '';
+  async getProjects(
+    nomeGrupo?: string
+  ): Promise<ApiResponse<{ projetos: Project[] }>> {
+    const query = nomeGrupo
+      ? `?nomeGrupo=${encodeURIComponent(nomeGrupo)}`
+      : "";
     return this.makeRequest<{ projetos: Project[] }>(`/projects${query}`, {
-      method: 'GET',
+      method: "GET",
     });
   }
 
   // Remover projeto
-  async removeProject(projetoID: number): Promise<ApiResponse<{ message: string }>> {
-    return this.makeRequest<{ message: string }>(`/projects/remove/${projetoID}`, {
-      method: 'DELETE',
-    });
+  async removeProject(
+    projetoID: number
+  ): Promise<ApiResponse<{ message: string }>> {
+    return this.makeRequest<{ message: string }>(
+      `/projects/remove/${projetoID}`,
+      {
+        method: "DELETE",
+      }
+    );
   }
 
   // Remover imagem de progresso
-  async removeProgressImage(imagemID: number): Promise<ApiResponse<{ message: string }>> {
-    return this.makeRequest<{ message: string }>(`/progress/delete/${imagemID}`, {
-      method: 'DELETE',
-    });
+  async removeProgressImage(
+    imagemID: number
+  ): Promise<ApiResponse<{ message: string }>> {
+    return this.makeRequest<{ message: string }>(
+      `/progress/delete/${imagemID}`,
+      {
+        method: "DELETE",
+      }
+    );
   }
 
   // Atualizar projeto
-  async updateProject(projetoID: number, data: { dataFim: string }): Promise<ApiResponse<{ message: string }>> {
-    return this.makeRequest<{ message: string }>(`/projects/change/${projetoID}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
+  async updateProject(
+    projetoID: number,
+    data: { dataFim: string }
+  ): Promise<ApiResponse<{ message: string }>> {
+    return this.makeRequest<{ message: string }>(
+      `/projects/change/${projetoID}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }
+    );
   }
 
   // Upload de imagem de progresso
-  async uploadProgressImage(projetoID: number, formData: FormData): Promise<ApiResponse<any>> {
+  async uploadProgressImage(
+    projetoID: number,
+    formData: FormData
+  ): Promise<ApiResponse<any>> {
     try {
-      const response = await fetch(`${API_BASE_URL}/progress/upload/${projetoID}`, {
-        method: 'POST',
-        body: formData, // FormData para upload de arquivo
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/progress/upload/${projetoID}`,
+        {
+          method: "POST",
+          body: formData, // FormData para upload de arquivo
+        }
+      );
 
       const data = await response.json();
 
@@ -191,23 +225,27 @@ class ApiService {
       } else {
         return {
           success: false,
-          error: data.message || 'Erro desconhecido',
+          error: data.message || "Erro desconhecido",
           status: response.status,
         };
       }
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erro de conexão',
+        error: error instanceof Error ? error.message : "Erro de conexão",
         status: 0,
       };
     }
   }
 
   // Buscar todos os grupos disponíveis
-  async getGroups(): Promise<ApiResponse<{ grupos: { grupoID: number; nomeGrupo: string }[] }>> {
-    return this.makeRequest<{ grupos: { grupoID: number; nomeGrupo: string }[] }>('/groups', {
-      method: 'GET',
+  async getGroups(): Promise<
+    ApiResponse<{ grupos: { grupoID: number; nomeGrupo: string }[] }>
+  > {
+    return this.makeRequest<{
+      grupos: { grupoID: number; nomeGrupo: string }[];
+    }>("/groups", {
+      method: "GET",
     });
   }
 }

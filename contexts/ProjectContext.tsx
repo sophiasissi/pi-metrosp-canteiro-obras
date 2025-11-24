@@ -1,6 +1,12 @@
-import React, { createContext, ReactNode, useContext, useState, useEffect } from 'react';
-import { apiService } from '../services/apiService';
-import type { ProgressImage, Project } from '../types/api';
+import React, {
+  createContext,
+  ReactNode,
+  useContext,
+  useState,
+  useEffect,
+} from "react";
+import { apiService } from "../services/apiService";
+import type { ProgressImage, Project } from "../types/api";
 
 // Alias para compatibilidade
 export type ProgressEntry = ProgressImage;
@@ -10,11 +16,20 @@ interface ProjectContextType {
   isLoading: boolean;
   error: string | null;
   addProject: (formData: FormData) => Promise<boolean>;
-  updateProject: (projetoID: number, updates: { dataFim: string }) => Promise<boolean>;
+  updateProject: (
+    projetoID: number,
+    updates: { dataFim: string }
+  ) => Promise<boolean>;
   deleteProject: (projetoID: number) => Promise<boolean>;
   getProject: (projetoID: number) => Promise<Project | null>;
-  addProgressEntry: (projetoID: number, formData: FormData) => Promise<{ success: boolean; porcentagem?: number; error?: string }>;
-  removeProgressImage: (projetoID: number, imagemID: number) => Promise<{ success: boolean; error?: string }>;
+  addProgressEntry: (
+    projetoID: number,
+    formData: FormData
+  ) => Promise<{ success: boolean; porcentagem?: number; error?: string }>;
+  removeProgressImage: (
+    projetoID: number,
+    imagemID: number
+  ) => Promise<{ success: boolean; error?: string }>;
   refreshProjects: (nomeGrupo?: string) => Promise<any>;
 }
 
@@ -23,7 +38,7 @@ const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 export const useProjects = () => {
   const context = useContext(ProjectContext);
   if (!context) {
-    throw new Error('useProjects deve ser usado dentro de um ProjectProvider');
+    throw new Error("useProjects deve ser usado dentro de um ProjectProvider");
   }
   return context;
 };
@@ -32,7 +47,9 @@ interface ProjectProviderProps {
   children: ReactNode;
 }
 
-export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) => {
+export const ProjectProvider: React.FC<ProjectProviderProps> = ({
+  children,
+}) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,35 +63,40 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
         await refreshProjects();
         return true;
       } else {
-        setError(result.error || 'Erro ao adicionar projeto');
+        setError(result.error || "Erro ao adicionar projeto");
         return false;
       }
     } catch (err) {
-      setError('Erro de conexão');
+      setError("Erro de conexão");
       return false;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const updateProject = async (projetoID: number, updates: { dataFim: string }): Promise<boolean> => {
+  const updateProject = async (
+    projetoID: number,
+    updates: { dataFim: string }
+  ): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
     try {
       const result = await apiService.updateProject(projetoID, updates);
       if (result.success) {
-        setProjects(prev =>
-          prev.map(project =>
-            project.projetoID === projetoID ? { ...project, ...updates } : project
+        setProjects((prev) =>
+          prev.map((project) =>
+            project.projetoID === projetoID
+              ? { ...project, ...updates }
+              : project
           )
         );
         return true;
       } else {
-        setError(result.error || 'Erro ao atualizar projeto');
+        setError(result.error || "Erro ao atualizar projeto");
         return false;
       }
     } catch (err) {
-      setError('Erro de conexão');
+      setError("Erro de conexão");
       return false;
     } finally {
       setIsLoading(false);
@@ -87,14 +109,16 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     try {
       const result = await apiService.removeProject(projetoID);
       if (result.success) {
-        setProjects(prev => prev.filter(project => project.projetoID !== projetoID));
+        setProjects((prev) =>
+          prev.filter((project) => project.projetoID !== projetoID)
+        );
         return true;
       } else {
-        setError(result.error || 'Erro ao deletar projeto');
+        setError(result.error || "Erro ao deletar projeto");
         return false;
       }
     } catch (err) {
-      setError('Erro de conexão');
+      setError("Erro de conexão");
       return false;
     } finally {
       setIsLoading(false);
@@ -111,30 +135,33 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
         const normalized = normalizeProject(result.data);
         return normalized;
       } else {
-        setError(result.error || 'Projeto não encontrado');
+        setError(result.error || "Projeto não encontrado");
         return null;
       }
     } catch (err) {
-      setError('Erro de conexão');
+      setError("Erro de conexão");
       return null;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const addProgressEntry = async (projetoID: number, formData: FormData): Promise<{ success: boolean; porcentagem?: number; error?: string }> => {
+  const addProgressEntry = async (
+    projetoID: number,
+    formData: FormData
+  ): Promise<{ success: boolean; porcentagem?: number; error?: string }> => {
     setIsLoading(true);
     setError(null);
     try {
       const result = await apiService.uploadProgressImage(projetoID, formData);
       if (result.success) {
-        console.log('addProgressEntry: upload result', result);
+        console.log("addProgressEntry: upload result", result);
         // Se o backend retornou o projeto atualizado, usá-lo diretamente
         const projetoRetornado = result.data?.projeto ?? result.data;
         if (projetoRetornado) {
           const normalized = normalizeProject(projetoRetornado);
-          setProjects(prev =>
-            prev.map(project =>
+          setProjects((prev) =>
+            prev.map((project) =>
               project.projetoID === projetoID ? normalized : project
             )
           );
@@ -142,8 +169,8 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
           // fallback: buscar o projeto
           const updatedProject = await getProject(projetoID);
           if (updatedProject) {
-            setProjects(prev =>
-              prev.map(project =>
+            setProjects((prev) =>
+              prev.map((project) =>
                 project.projetoID === projetoID ? updatedProject : project
               )
             );
@@ -152,15 +179,15 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
 
         return {
           success: true,
-          porcentagem: result.data?.porcentagem
+          porcentagem: result.data?.porcentagem,
         };
       } else {
-        const errorMsg = result.error || 'Erro ao adicionar progresso';
+        const errorMsg = result.error || "Erro ao adicionar progresso";
         setError(errorMsg);
         return { success: false, error: errorMsg };
       }
     } catch (err) {
-      const errorMsg = 'Erro de conexão';
+      const errorMsg = "Erro de conexão";
       setError(errorMsg);
       return { success: false, error: errorMsg };
     } finally {
@@ -168,7 +195,10 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     }
   };
 
-  const removeProgressImage = async (projetoID: number, imagemID: number): Promise<{ success: boolean; error?: string }> => {
+  const removeProgressImage = async (
+    projetoID: number,
+    imagemID: number
+  ): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     setError(null);
     try {
@@ -177,16 +207,18 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
         // Atualiza o projeto no state buscando o projeto atualizado
         const updated = await getProject(projetoID);
         if (updated) {
-          setProjects(prev => prev.map(p => p.projetoID === projetoID ? updated : p));
+          setProjects((prev) =>
+            prev.map((p) => (p.projetoID === projetoID ? updated : p))
+          );
         }
         return { success: true };
       } else {
-        const errMsg = result.error || 'Erro ao deletar imagem';
+        const errMsg = result.error || "Erro ao deletar imagem";
         setError(errMsg);
         return { success: false, error: errMsg };
       }
     } catch (err) {
-      const errMsg = 'Erro de conexão';
+      const errMsg = "Erro de conexão";
       setError(errMsg);
       return { success: false, error: errMsg };
     } finally {
@@ -198,20 +230,23 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     setIsLoading(true);
     setError(null);
     // Retorna a promise para que chamadores possam await
-    return apiService.getProjects(nomeGrupo)
-      .then(result => {
+    return apiService
+      .getProjects(nomeGrupo)
+      .then((result) => {
         if (result.success && result.data) {
           // normalize projects list
-          const normalizedList = (result.data.projetos || []).map((p: any) => normalizeProject(p));
+          const normalizedList = (result.data.projetos || []).map((p: any) =>
+            normalizeProject(p)
+          );
           setProjects(normalizedList);
         } else {
-          setError(result.error || 'Erro ao buscar projetos');
+          setError(result.error || "Erro ao buscar projetos");
         }
         return result;
       })
       .catch((err) => {
-        setError('Erro de conexão');
-        return { success: false, error: 'Erro de conexão', status: 0 } as any;
+        setError("Erro de conexão");
+        return { success: false, error: "Erro de conexão", status: 0 } as any;
       })
       .finally(() => setIsLoading(false));
   };
@@ -233,14 +268,19 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       dataEnvio: img.dataEnvio ?? img.createdAt ?? null,
     }));
 
-    const progressHistory = (p.progressHistory || imagensProgresso.map((img: any) => ({
-      id: String(img.imagemID),
-      image: img.caminhoImagem,
-      progress: img.porcentagem,
-      createdAt: img.dataEnvio,
-    })));
+    const progressHistory =
+      p.progressHistory ||
+      imagensProgresso.map((img: any) => ({
+        id: String(img.imagemID),
+        image: img.caminhoImagem,
+        progress: img.porcentagem,
+        createdAt: img.dataEnvio,
+      }));
 
-    const max_progress = imagensProgresso.length > 0 ? Math.max(...imagensProgresso.map((i: any) => i.porcentagem || 0)) : 0;
+    const max_progress =
+      imagensProgresso.length > 0
+        ? Math.max(...imagensProgresso.map((i: any) => i.porcentagem || 0))
+        : 0;
 
     return {
       projetoID: projetoID,
@@ -254,7 +294,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       id: projetoID ? String(projetoID) : undefined,
       name: p.name ?? p.nomeProjeto,
       location: p.location ?? p.localizacao,
-      period: p.period ?? `${p.dataInicio ?? ''} - ${p.dataFim ?? ''}`,
+      period: p.period ?? `${p.dataInicio ?? ""} - ${p.dataFim ?? ""}`,
       group: p.group ?? (p.grupo ? p.grupo.nomeGrupo : undefined),
       progress: p.progress ?? max_progress,
       image: p.image ?? p.imagemInicial,
@@ -264,18 +304,20 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
   }
 
   return (
-    <ProjectContext.Provider value={{ 
-      projects, 
-      isLoading, 
-      error, 
-      addProject, 
-      updateProject, 
-      deleteProject, 
-      getProject,
-      addProgressEntry,
-      removeProgressImage,
-      refreshProjects 
-    }}>
+    <ProjectContext.Provider
+      value={{
+        projects,
+        isLoading,
+        error,
+        addProject,
+        updateProject,
+        deleteProject,
+        getProject,
+        addProgressEntry,
+        removeProgressImage,
+        refreshProjects,
+      }}
+    >
       {children}
     </ProjectContext.Provider>
   );
